@@ -6,7 +6,7 @@ Minimal Z80 bootstrap compiler and interactive outer interpreter loop running on
 
 ## Z80 Foundation
 
-- [ ] CPU memory layout configuration
+- [x] CPU memory layout configuration
 - [ ] Inner interpreter loop (NEXT, DOCOL, SEMI)
 
 ## Z80 Minimal TTY & Input Processing
