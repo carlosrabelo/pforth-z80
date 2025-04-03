@@ -23,6 +23,12 @@ start_end:
 ; Forth Dictionary Segment
 ; -----------------------------------------------------------------------------
     include "src/inner.asm"
+    include "src/io.asm"
+
+; -----------------------------------------------------------------------------
+; Dictionary Entry Point configuration
+; -----------------------------------------------------------------------------
+LAST_NFA: equ KEY_NFA
 
 ; -----------------------------------------------------------------------------
 ; End of Assembly-compiled Forth. Next memory is dynamically allocated.
