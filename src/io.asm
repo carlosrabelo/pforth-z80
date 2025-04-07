@@ -606,6 +606,44 @@ FIND_not_found:
     ret
 
 
+; -----------------------------------------------------------------------------
+; EXECUTE ( cfa -- )
+; -----------------------------------------------------------------------------
+; Executes the word whose CFA is on the top of the data stack (TOS).
+; -----------------------------------------------------------------------------
+EXECUTE_NFA:
+    ; Name Field: Length 7, bit 7 set in first and last characters
+    db $87, 'E', 'X', 'E', 'C', 'U', 'T', $C5
+
+    ; Link Field: Points to previous word's NFA (FIND_NFA)
+EXECUTE_LFA:
+    dw FIND_NFA
+
+    ; Code Field: Points to the code execution entry
+EXECUTE_CFA:
+    dw EXECUTE_code
+
+EXECUTE_code:
+    ; Copy the CFA from TOS (DE) into HL (Working register W)
+    ld h, d
+    ld l, e                     ; HL = CFA (W)
+
+    ; Pop next value from data stack (IX) into TOS (DE) to restore stack
+    ld e, (ix+0)
+    ld d, (ix+1)
+    inc ix
+    inc ix                      ; Stack is now restored, previous TOS is back in DE
+
+    ; Dispatch target execution code: read code address from (HL) into IY
+    ld a, (hl)
+    ld iyl, a                   ; Lower byte of code address
+    inc hl                      ; Point to CFA + 1 (High byte of code address)
+    ld a, (hl)
+    ld iyh, a                   ; Upper byte of code address
+
+    ; Jump to the target code. HL is left pointing to (CFA + 1).
+    jp (iy)
+
 ; Scaffold: character output helper (moves to control.asm with QUIT)
 EMIT_char:
     out (TTY_DATA_PORT), a
