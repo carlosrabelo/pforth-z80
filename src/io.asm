@@ -462,6 +462,150 @@ NUM_sign_done:
     ret
 
 
+; -----------------------------------------------------------------------------
+; FIND ( addr -- cfa 1 | addr 0 )
+; -----------------------------------------------------------------------------
+; Searches the dictionary for a word with the name specified by the counted string at addr.
+; If found, returns the Word's CFA and 1 (true).
+; If not found, returns the original string addr and 0 (false).
+; -----------------------------------------------------------------------------
+FIND_NFA:
+    ; Name Field: Length 4, bit 7 set in first and last characters
+    db $84, 'F', 'I', 'N', $C4
+
+    ; Link Field: Points to previous word's NFA (NUMBER_NFA)
+FIND_LFA:
+    dw NUMBER_NFA
+
+    ; Code Field: Points to the code execution entry
+FIND_CFA:
+    dw FIND_code
+
+FIND_code:
+    ; Save search string address from TOS (DE) to IY
+    push de
+    pop iy                      ; IY = address of string to find
+
+    ; Pop next value from data stack (IX) to restore stack
+    ld e, (ix+0)
+    ld d, (ix+1)
+    inc ix
+    inc ix
+
+    ; Push the restored TOS back to data stack
+    dec ix
+    ld (ix+0), d
+    dec ix
+    ld (ix+0), e
+
+    call FIND_internal
+
+    ; Push cfa/addr (HL) onto Forth data stack (IX)
+    dec ix
+    ld (ix+0), h
+    dec ix
+    ld (ix+0), l
+
+    ; Load flag (A) into TOS (DE)
+    ld d, 0
+    ld e, a
+    jp NEXT
+
+FIND_internal:
+    ; Start dictionary search at the last word in search vocabulary (U_CONTEXT)
+    ld hl, (USER_AREA_START + U_CONTEXT)
+    ex de, hl
+
+FIND_search_loop:
+    ; Check if DE is 0 (end of dictionary chain)
+    ld a, d
+    or a
+    jr z, FIND_not_found        ; If 0, word not found
+
+
+    ; Save loop pointers to protect them during comparison
+    push de                     ; Save dictionary NFA pointer
+    push iy                     ; Save search string pointer
+
+    ; Compare lengths
+    ld a, (iy+0)
+    ld b, a                     ; B = search string length
+    
+    ld a, (de)
+    and $1f                     ; A = dictionary name length (mask out flags)
+    
+    cp b
+    jr nz, FIND_next            ; If lengths differ, mismatch
+
+    ; Lengths match, compare characters
+    ld c, a                     ; C = character count
+    inc iy                      ; Point to first character of search string
+    inc de                      ; Point to first character of dictionary word
+
+FIND_compare_loop:
+    ld a, (iy+0)
+    ld h, a                     ; H = character from search string
+    
+    ld a, (de)
+    and $7f                     ; A = character from dictionary word (mask out bit 7)
+    
+    cp h
+    jr nz, FIND_next            ; If characters differ, mismatch
+
+    inc iy
+    inc de
+    dec c
+    jr nz, FIND_compare_loop
+
+    ; --- WORD FOUND ---
+    ; Restore original pointers from stack
+    pop iy                      ; Clear IY stack
+    pop de                      ; DE = NFA of found word
+
+    ; Calculate LFA from NFA in DE: LFA = NFA + 1 + length
+    ld a, (de)
+    and $1f                     ; A = length
+    ld l, a
+    ld h, 0
+    add hl, DE
+    inc hl                      ; HL = LFA address
+
+    ; Calculate CFA from LFA: CFA = LFA + 2
+    inc hl
+    inc hl                      ; HL = CFA address
+    ld a, 1
+    ret
+
+FIND_next:
+    ; Mismatch: restore original pointers
+    pop iy                      ; Restore search string pointer
+    pop de                      ; Restore dictionary NFA pointer
+
+    ; Calculate LFA from NFA: LFA = NFA + 1 + length
+    ld a, (de)
+    and $1f                     ; A = length
+    ld l, a
+    ld h, 0
+    add hl, de
+    inc hl                      ; HL = LFA address
+
+    ; Read link from LFA (points to previous word's NFA) into DE
+    ld a, (hl)
+    ld e, a
+    inc hl
+    ld a, (hl)
+    ld d, a                     ; DE = previous word's NFA
+
+    jr FIND_search_loop
+
+FIND_not_found:
+    ; --- WORD NOT FOUND ---
+    push iy
+    pop hl                      ; HL = original string address
+    ld a, 0
+    ret
+
+
 ; Scaffold: character output helper (moves to control.asm with QUIT)
 EMIT_char:
     out (TTY_DATA_PORT), a

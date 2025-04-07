@@ -15,7 +15,7 @@ Minimal Z80 bootstrap compiler and interactive outer interpreter loop running on
 - [x] EMIT
 - [x] WORD
 - [x] NUMBER
-- [ ] FIND
+- [x] FIND
 - [ ] EXECUTE
 
 ## Z80 Compiler & Outer Loop
