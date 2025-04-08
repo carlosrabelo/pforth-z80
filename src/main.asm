@@ -24,11 +24,12 @@ start_end:
 ; -----------------------------------------------------------------------------
     include "src/inner.asm"
     include "src/io.asm"
+    include "src/control.asm"
 
 ; -----------------------------------------------------------------------------
 ; Dictionary Entry Point configuration
 ; -----------------------------------------------------------------------------
-LAST_NFA: equ EXECUTE_NFA
+LAST_NFA: equ STATE_NFA
 
 ; -----------------------------------------------------------------------------
 ; End of Assembly-compiled Forth. Next memory is dynamically allocated.
