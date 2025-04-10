@@ -709,3 +709,25 @@ RESUME_CFA:  dw RESUME_code
 RESUME_code:
     jp INTERPRET_loop
 
+; -----------------------------------------------------------------------------
+; [ ( -- )
+; Sets interpretation state (STATE = 0). This is an IMMEDIATE word.
+; -----------------------------------------------------------------------------
+LBRACKET_NFA:
+    ; Name Field: Length 1, immediate flag set, bit 7 set in first and last characters
+    db $C1, $DB
+
+    ; Link Field: Points to previous word's NFA (QUIT_NFA)
+    dw QUIT_NFA
+
+    ; Code Field: Points to the code execution entry
+LBRACKET_CFA:
+    dw LBRACKET_code
+
+LBRACKET_code:
+    xor a
+    ld (USER_AREA_START + U_STATE), a
+    jp NEXT
+
+; -----------------------------------------------------------------------------
+
