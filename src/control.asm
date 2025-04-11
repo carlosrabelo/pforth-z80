@@ -853,3 +853,41 @@ CREATE_execution:
 
 ; -----------------------------------------------------------------------------
 
+; , (comma) ( x -- )
+; Allocates two bytes in the dictionary and stores x there, advancing U_DP.
+; -----------------------------------------------------------------------------
+COMMA_NFA:
+    ; Name Field: Length 1, bit 7 set in first and last character (which is the same)
+    ; Length 1 with bit 7 set = $81
+    ; Character ',' (ASCII $2C) with bit 7 set = $AC
+    db $81, $AC
+
+    ; Link Field: Points to previous word's NFA (CREATE_NFA)
+    dw CREATE_NFA
+
+COMMA_CFA:
+    dw COMMA_code
+
+COMMA_code:
+    ; 1. Load U_DP (Dictionary Pointer) into HL
+    ld hl, (USER_AREA_START + U_DP)
+
+    ; 2. Write the 16-bit value in TOS (DE) to memory at (HL)
+    ld (hl), e
+    inc hl
+    ld (hl), d
+    inc hl                      ; HL now points to DP + 2
+
+    ; 3. Update U_DP with the new address
+    ld (USER_AREA_START + U_DP), hl
+
+    ; 4. Pop the next value from the data stack (IX) into TOS (DE)
+    ld e, (ix+0)
+    ld d, (ix+1)
+    inc ix
+    inc ix
+
+    jp NEXT
+
+; -----------------------------------------------------------------------------
+
