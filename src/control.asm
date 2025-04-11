@@ -964,3 +964,41 @@ COLON_code:
 
 ; -----------------------------------------------------------------------------
 
+; ; (semicolon) ( -- )
+; Ends compilation of a colon definition. Compiles SEMI_CFA and exits compiling mode.
+; This is an IMMEDIATE word.
+; -----------------------------------------------------------------------------
+SEMICOLON_NFA:
+    ; Name Field: Length 1, bit 7 set (and bit 6 set for IMMEDIATE) = $C1
+    ; Character ';' (ASCII $3B) with bit 7 set = $3B | $80 = $BB
+    db $C1, $BB
+
+    ; Link Field: Points to previous word's NFA (COLON_NFA)
+    dw COLON_NFA
+
+SEMICOLON_CFA:
+    dw SEMICOLON_code
+
+SEMICOLON_code:
+    ; 1. Compile the CFA of SEMI into the dictionary (pointed by U_DP)
+    ld hl, (USER_AREA_START + U_DP)
+    ld a, SEMI_CFA & $FF
+    ld (hl), a
+    inc hl
+    ld a, (SEMI_CFA >> 8) & $FF
+    ld (hl), a
+    inc hl                      ; HL points to DP + 2
+    ld (USER_AREA_START + U_DP), hl
+
+    ; 2. Exit compilation mode: STATE = 0
+    xor a
+    ld (USER_AREA_START + U_STATE), a
+
+    jp NEXT
+
+; Global Semicolon CFA pointing to the SEMI execution code
+SEMI_CFA:
+    dw SEMI
+
+; -----------------------------------------------------------------------------
+
