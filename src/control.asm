@@ -891,3 +891,32 @@ COMMA_code:
 
 ; -----------------------------------------------------------------------------
 
+; IMMEDIATE ( -- )
+; Marks the most recently defined word as immediate (executed during compile time).
+; -----------------------------------------------------------------------------
+IMMEDIATE_NFA:
+    ; Name Field: Length 9, bit 7 set in first ('I') and last ('E') characters
+    ; Length 9 with bit 7 set = $89
+    ; First char 'I' ($49) with bit 7 set = $C9
+    ; Last char 'E' ($45) with bit 7 set = $C5
+    db $89, $C9, 'M', 'M', 'E', 'D', 'I', 'A', 'T', $C5
+
+    ; Link Field: Points to previous word's NFA (COMMA_NFA)
+    dw COMMA_NFA
+
+IMMEDIATE_CFA:
+    dw IMMEDIATE_code
+
+IMMEDIATE_code:
+    ; 1. Load U_CURRENT NFA address into HL
+    ld hl, (USER_AREA_START + U_CURRENT)
+
+    ; 2. Set bit 6 in the length byte at (HL)
+    ld a, (hl)
+    or $40
+    ld (hl), a
+
+    jp NEXT
+
+; -----------------------------------------------------------------------------
+
