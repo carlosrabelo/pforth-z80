@@ -36,7 +36,7 @@ Minimal Z80 bootstrap compiler and interactive outer interpreter loop running on
 ## Test Automation
 
 - [x] Z80 assembly test harness
-- [ ] Python test runner script
+- [x] Python test runner script
 - [ ] Makefile test target integration
 
 ## Second milestone
