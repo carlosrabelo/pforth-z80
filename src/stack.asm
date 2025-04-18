@@ -28,3 +28,28 @@ DUP_code:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; DROP ( x -- )
+; Discards the top of the data stack.
+; -----------------------------------------------------------------------------
+DROP_NFA:
+    ; Name Field: Length 4, bit 7 set in length ($84), first ('D') and last ('P') characters
+    db $84, $C4, 'R', 'O', $D0
+
+    ; Link Field: Points to DUP_NFA
+    dw DUP_NFA
+
+DROP_CFA:
+    dw DROP_code
+
+DROP_code:
+    ; Load the new TOS (DE) from the data stack (IX) and adjust DSP (IX)
+    ld a, (ix+0)
+    ld e, a
+    ld a, (ix+1)
+    ld d, a
+    inc ix
+    inc ix
+    
+    jp NEXT
+
