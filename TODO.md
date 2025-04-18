@@ -49,7 +49,7 @@ Standard pFORTH dictionary expansion and validation.
 
 - [x] DUP
 - [x] DROP
-- [ ] SWAP
+- [x] SWAP
 - [ ] OVER
 - [ ] ROT
 - [ ] ?DUP
