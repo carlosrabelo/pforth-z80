@@ -82,7 +82,7 @@ cold_start_end:
     include "src/control.asm"
     include "src/stack.asm"
 
-LAST_NFA: equ OVER_NFA
+LAST_NFA: equ ROT_NFA
 
 ; =============================================================================
 ; Test Assertions and Utilities
