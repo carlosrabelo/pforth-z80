@@ -52,7 +52,7 @@ Standard pFORTH dictionary expansion and validation.
 - [x] SWAP
 - [x] OVER
 - [x] ROT
-- [ ] ?DUP
+- [x] ?DUP
 - [ ] >R
 - [ ] R>
 - [ ] R@
