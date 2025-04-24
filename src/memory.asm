@@ -28,3 +28,46 @@ FETCH_code:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; ! ( x a -- )
+; Stores a 16-bit value 'x' at memory address 'a'.
+; -----------------------------------------------------------------------------
+STORE_NFA:
+    ; Name Field: Length 1, bit 7 set in length ($81) and character '!' ($A1)
+    db $81, $A1
+
+    ; Link Field: Points to FETCH_NFA
+    dw FETCH_NFA
+
+STORE_CFA:
+    dw STORE_code
+
+STORE_code:
+    ; Read the address from TOS (DE) into HL
+    ld h, d
+    ld l, e
+    
+    ; Write the low byte of x (ix+0) to (hl)
+    ld a, (ix+0)
+    ld (hl), a
+    
+    inc hl
+    
+    ; Write the high byte of x (ix+1) to (hl)
+    ld a, (ix+1)
+    ld (hl), a
+    
+    ; Load the new TOS (DE) from the stack (at ix+2)
+    ld a, (ix+2)
+    ld e, a
+    ld a, (ix+3)
+    ld d, a
+    
+    ; Remove x and the new TOS from stack memory (4 bytes)
+    inc ix
+    inc ix
+    inc ix
+    inc ix
+    
+    jp NEXT
+
