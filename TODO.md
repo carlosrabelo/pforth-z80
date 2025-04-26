@@ -63,7 +63,7 @@ Standard pFORTH dictionary expansion and validation.
 - [x] !
 - [x] C@
 - [x] C!
-- [ ] +!
+- [x] +!
 
 ### Logic & Math
 
