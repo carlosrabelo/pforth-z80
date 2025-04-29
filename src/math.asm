@@ -111,3 +111,43 @@ AND_code:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; OR ( x1 x2 -- x3 )
+; Performs a bitwise OR on the top two stack values.
+; -----------------------------------------------------------------------------
+OR_NFA:
+    ; Name Field: Length 2, bit 7 set in length ($82), first ('O') and last ('R') characters
+    db $82, $CF, $D2
+
+    ; Link Field: Points to AND_NFA
+    dw AND_NFA
+
+OR_CFA:
+    dw OR_code
+
+OR_code:
+    ; Load the operand x1 from data stack memory (IX) into HL
+    ld a, (ix+0)
+    ld l, a
+    ld a, (ix+1)
+    ld h, a
+    
+    ; Perform bitwise OR of HL (x1) and DE (x2)
+    ld a, l
+    or e
+    ld l, a
+    
+    ld a, h
+    or d
+    ld h, a
+    
+    ; Store result back into TOS (DE)
+    ld d, h
+    ld e, l
+    
+    ; Adjust DSP (IX) past x1
+    inc ix
+    inc ix
+    
+    jp NEXT
+
