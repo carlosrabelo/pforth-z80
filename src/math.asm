@@ -151,3 +151,43 @@ OR_code:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; XOR ( x1 x2 -- x3 )
+; Performs a bitwise XOR on the top two stack values.
+; -----------------------------------------------------------------------------
+XOR_NFA:
+    ; Name Field: Length 3, bit 7 set in length ($83), first ('X') and last ('R') characters
+    db $83, $D8, 'O', $D2
+
+    ; Link Field: Points to OR_NFA
+    dw OR_NFA
+
+XOR_CFA:
+    dw XOR_code
+
+XOR_code:
+    ; Load the operand x1 from data stack memory (IX) into HL
+    ld a, (ix+0)
+    ld l, a
+    ld a, (ix+1)
+    ld h, a
+    
+    ; Perform bitwise XOR of HL (x1) and DE (x2)
+    ld a, l
+    xor e
+    ld l, a
+    
+    ld a, h
+    xor d
+    ld h, a
+    
+    ; Store result back into TOS (DE)
+    ld d, h
+    ld e, l
+    
+    ; Adjust DSP (IX) past x1
+    inc ix
+    inc ix
+    
+    jp NEXT
+
