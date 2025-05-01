@@ -220,3 +220,31 @@ zero_eq_not_zero:
     ld de, $0000
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; 0< ( x -- flag )
+; Returns true (-1) if x is negative, false (0) otherwise.
+; -----------------------------------------------------------------------------
+ZERO_LESS_NFA:
+    ; Name Field: Length 2, bit 7 set in length ($82), first ('0') and last ('<') characters
+    db $82, $B0, $BC
+
+    ; Link Field: Points to ZERO_EQUALS_NFA
+    dw ZERO_EQUALS_NFA
+
+ZERO_LESS_CFA:
+    dw ZERO_LESS_code
+
+ZERO_LESS_code:
+    ; Check the sign bit (bit 15) of x (which is bit 7 of D)
+    bit 7, d
+    jr nz, zero_less_negative
+    
+    ; TOS is positive or zero, return false ($0000)
+    ld de, $0000
+    jp NEXT
+    
+zero_less_negative:
+    ; TOS is negative, return true ($FFFF)
+    ld de, $FFFF
+    jp NEXT
+
