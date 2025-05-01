@@ -191,3 +191,32 @@ XOR_code:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; 0= ( x -- flag )
+; Returns true (-1) if x is zero, false (0) otherwise.
+; -----------------------------------------------------------------------------
+ZERO_EQUALS_NFA:
+    ; Name Field: Length 2, bit 7 set in length ($82), first ('0') and last ('=') characters
+    db $82, $B0, $BD
+
+    ; Link Field: Points to XOR_NFA
+    dw XOR_NFA
+
+ZERO_EQUALS_CFA:
+    dw ZERO_EQUALS_code
+
+ZERO_EQUALS_code:
+    ; Check if TOS (DE) is zero
+    ld a, d
+    or e
+    jr nz, zero_eq_not_zero
+    
+    ; TOS is zero, return true ($FFFF)
+    ld de, $FFFF
+    jp NEXT
+    
+zero_eq_not_zero:
+    ; TOS is not zero, return false ($0000)
+    ld de, $0000
+    jp NEXT
+
