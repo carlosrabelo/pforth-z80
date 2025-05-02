@@ -248,3 +248,46 @@ zero_less_negative:
     ld de, $FFFF
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; U< ( u1 u2 -- flag )
+; Compares two unsigned 16-bit values and returns true (-1) if u1 < u2.
+; -----------------------------------------------------------------------------
+U_LESS_NFA:
+    ; Name Field: Length 2, bit 7 set in length ($82), first ('U') and last ('<') characters
+    db $82, $D5, $BC
+
+    ; Link Field: Points to ZERO_LESS_NFA
+    dw ZERO_LESS_NFA
+
+U_LESS_CFA:
+    dw U_LESS_code
+
+U_LESS_code:
+    ; Load the operand u1 from data stack memory (IX) into HL
+    ld a, (ix+0)
+    ld l, a
+    ld a, (ix+1)
+    ld h, a
+    
+    ; Compare HL (u1) and DE (u2) by subtracting DE from HL.
+    ; If HL < DE, borrow occurs setting the Carry Flag (C).
+    or a
+    sbc hl, de
+    
+    jr c, u_less_true
+    
+    ; u1 >= u2, return false ($0000)
+    ld de, $0000
+    jr u_less_done
+    
+u_less_true:
+    ; u1 < u2, return true ($FFFF)
+    ld de, $FFFF
+    
+u_less_done:
+    ; Adjust DSP (IX) past u1
+    inc ix
+    inc ix
+    
+    jp NEXT
+
