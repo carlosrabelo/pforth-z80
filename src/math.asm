@@ -291,3 +291,45 @@ u_less_done:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; = ( x1 x2 -- flag )
+; Compares two 16-bit values and returns true (-1) if they are equal.
+; -----------------------------------------------------------------------------
+EQUALS_NFA:
+    ; Name Field: Length 1, bit 7 set in length ($81) and character '=' ($BD)
+    db $81, $BD
+
+    ; Link Field: Points to U_LESS_NFA
+    dw U_LESS_NFA
+
+EQUALS_CFA:
+    dw EQUALS_code
+
+EQUALS_code:
+    ; Load the operand x1 from data stack memory (IX) into HL
+    ld a, (ix+0)
+    ld l, a
+    ld a, (ix+1)
+    ld h, a
+    
+    ; Compare HL (x1) and DE (x2)
+    or a
+    sbc hl, de
+    
+    jr z, equals_true
+    
+    ; x1 != x2, return false ($0000)
+    ld de, $0000
+    jr equals_done
+    
+equals_true:
+    ; x1 == x2, return true ($FFFF)
+    ld de, $FFFF
+    
+equals_done:
+    ; Adjust DSP (IX) past x1
+    inc ix
+    inc ix
+    
+    jp NEXT
+
