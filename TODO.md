@@ -78,7 +78,7 @@ Standard pFORTH dictionary expansion and validation.
 - [x] =
 - [x] <
 - [x] >
-- [ ] *
+- [x] *
 - [ ] /MOD
 - [ ] /
 - [ ] MOD
