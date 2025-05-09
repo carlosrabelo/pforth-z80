@@ -445,3 +445,62 @@ greater_done:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; * ( n1 n2 -- prod )
+; Multiplies the top two 16-bit values on the stack and returns the 16-bit product.
+; -----------------------------------------------------------------------------
+STAR_NFA:
+    ; Name Field: Length 1, bit 7 set in length ($81) and character '*' ($AA)
+    db $81, $AA
+
+    ; Link Field: Points to GREATER_NFA
+    dw GREATER_NFA
+
+STAR_CFA:
+    dw STAR_code
+
+STAR_code:
+    ; HL = n2 (TOS, which is in DE)
+    ld h, d
+    ld l, e
+    
+    ; DE = n1 (from stack)
+    ld a, (ix+0)
+    ld e, a
+    ld a, (ix+1)
+    ld d, a
+    
+    ; IY = 0 (result accumulator)
+    ld iy, 0
+    
+    ; A = 16 (loop counter)
+    ld a, 16
+    
+star_loop:
+    ; Shift HL to the right, bit 0 goes to Carry
+    srl h
+    rr l
+    
+    jr nc, star_no_add
+    
+    ; Add multiplicand (DE) to result (IY)
+    add iy, de
+    
+star_no_add:
+    ; Shift multiplicand (DE) to the left for the next iteration
+    sla e
+    rl d
+    
+    dec a
+    jr nz, star_loop
+    
+    ; Copy 16-bit result from IY to DE (TOS)
+    push iy
+    pop de
+    
+    ; Adjust DSP (IX) past n1
+    inc ix
+    inc ix
+    
+    jp NEXT
+
