@@ -665,3 +665,24 @@ slash_mod_quot_sign_done:
 div_flags:
     db 0
 
+; -----------------------------------------------------------------------------
+; / ( n1 n2 -- quot )
+; Divides n1 by n2, leaving the quotient quot.
+; Implemented as: /MOD SWAP DROP
+; -----------------------------------------------------------------------------
+SLASH_NFA:
+    ; Name Field: Length 1, bit 7 set in length ($81) and character '/' ($AF)
+    db $81, $AF
+
+    ; Link Field: Points to SLASH_MOD_NFA
+    dw SLASH_MOD_NFA
+
+SLASH_CFA:
+    dw DOCOL
+
+SLASH_code:
+    dw SLASH_MOD_CFA
+    dw SWAP_CFA
+    dw DROP_CFA
+    dw SEMI_CFA
+
