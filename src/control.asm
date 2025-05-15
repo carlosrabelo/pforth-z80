@@ -1002,3 +1002,33 @@ SEMI_CFA:
 
 ; -----------------------------------------------------------------------------
 
+; HERE ( -- addr )
+; Leaves the address of the next free location in the dictionary on the stack.
+; -----------------------------------------------------------------------------
+HERE_NFA:
+    ; Name Field: Length 4, bit 7 set in length ($84), first ('H') and last ('E') characters
+    ; H = $48 -> $C8, E = $45 -> $C5
+    db $84, $C8, 'E', 'R', $C5
+
+    ; Link Field: Points to SEMICOLON_NFA
+    dw SEMICOLON_NFA
+
+HERE_CFA:
+    dw HERE_code
+
+HERE_code:
+    ; Push current TOS (DE) to data stack memory (IX)
+    dec ix
+    ld a, d
+    ld (ix+0), a
+    dec ix
+    ld a, e
+    ld (ix+0), a
+    
+    ; Load DP into TOS (DE)
+    ld hl, (USER_AREA_START + U_DP)
+    ld d, h
+    ld e, l
+    
+    jp NEXT
+
