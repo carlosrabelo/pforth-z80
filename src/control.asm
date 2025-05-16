@@ -1070,3 +1070,39 @@ PAD_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
+
+; ALLOT ( n -- )
+; Allocates n bytes in the dictionary by advancing DP by n.
+; -----------------------------------------------------------------------------
+ALLOT_NFA:
+    ; Name Field: Length 5, bit 7 set in length ($85), first ('A') and last ('T') characters
+    ; A = $41 -> $C1, T = $54 -> $D4
+    db $85, $C1, 'L', 'L', 'O', $D4
+
+    ; Link Field: Points to PAD_NFA
+    dw PAD_NFA
+
+ALLOT_CFA:
+    dw ALLOT_code
+
+ALLOT_code:
+    ; Load current DP into HL
+    ld hl, (USER_AREA_START + U_DP)
+    
+    ; Add n (TOS DE) to DP (HL)
+    add hl, de
+    
+    ; Store updated DP
+    ld (USER_AREA_START + U_DP), hl
+    
+    ; Pop new TOS (DE) from data stack memory (IX)
+    ld a, (ix+0)
+    ld e, a
+    ld a, (ix+1)
+    ld d, a
+    inc ix
+    inc ix
+    
+    jp NEXT
+
+; -----------------------------------------------------------------------------
