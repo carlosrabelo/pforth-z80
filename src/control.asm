@@ -1032,3 +1032,41 @@ HERE_code:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; PAD ( -- addr )
+; Leaves the address of the scratchpad buffer (HERE + 68) on the stack.
+; -----------------------------------------------------------------------------
+PAD_NFA:
+    ; Name Field: Length 3, bit 7 set in length ($83), first ('P') and last ('D') characters
+    ; P = $50 -> $D0, D = $44 -> $C4
+    db $83, $D0, 'A', $C4
+
+    ; Link Field: Points to HERE_NFA
+    dw HERE_NFA
+
+PAD_CFA:
+    dw PAD_code
+
+PAD_code:
+    ; Push current TOS (DE) to data stack memory (IX)
+    dec ix
+    ld a, d
+    ld (ix+0), a
+    dec ix
+    ld a, e
+    ld (ix+0), a
+    
+    ; Load DP into HL
+    ld hl, (USER_AREA_START + U_DP)
+    
+    ; Add PAD offset (68 bytes)
+    ld de, 68
+    add hl, de
+    
+    ; Place PAD address in TOS (DE)
+    ld d, h
+    ld e, l
+    
+    jp NEXT
+
+; -----------------------------------------------------------------------------
