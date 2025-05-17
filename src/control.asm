@@ -1106,3 +1106,38 @@ ALLOT_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
+
+; C, ( char -- )
+; Allocates one byte in the dictionary and stores char there, advancing DP by 1.
+; -----------------------------------------------------------------------------
+C_COMMA_NFA:
+    ; Name Field: Length 2, bit 7 set in length ($82), first ('C') and last (',') characters
+    ; C = $43 -> $C3, , = $2C -> $AC
+    db $82, $C3, $AC
+
+    ; Link Field: Points to ALLOT_NFA
+    dw ALLOT_NFA
+
+C_COMMA_CFA:
+    dw C_COMMA_code
+
+C_COMMA_code:
+    ; Load current DP into HL
+    ld hl, (USER_AREA_START + U_DP)
+    
+    ; Write low byte of TOS (E) to DP (HL)
+    ld (hl), e
+    
+    ; Advance DP by 1
+    inc hl
+    ld (USER_AREA_START + U_DP), hl
+    
+    ; Pop new TOS (DE) from data stack memory (IX)
+    ld e, (ix+0)
+    ld d, (ix+1)
+    inc ix
+    inc ix
+    
+    jp NEXT
+
+; -----------------------------------------------------------------------------

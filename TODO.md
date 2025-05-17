@@ -88,7 +88,7 @@ Standard pFORTH dictionary expansion and validation.
 - [x] HERE
 - [x] PAD
 - [x] ALLOT
-- [ ] C,
+- [x] C,
 - [ ] CONSTANT
 - [ ] VARIABLE
 - [ ] [COMPILE]
