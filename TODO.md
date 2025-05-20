@@ -89,7 +89,7 @@ Standard pFORTH dictionary expansion and validation.
 - [x] PAD
 - [x] ALLOT
 - [x] C,
-- [ ] CONSTANT
+- [x] CONSTANT
 - [ ] VARIABLE
 - [ ] [COMPILE]
 - [ ] COMPILE
