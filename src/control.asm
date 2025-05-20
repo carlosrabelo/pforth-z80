@@ -1141,3 +1141,82 @@ C_COMMA_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
+
+; CONSTANT ( x -- )
+; Creates a constant with the given name, storing x.
+; -----------------------------------------------------------------------------
+CONSTANT_NFA:
+    ; Name Field: Length 8, bit 7 set in length ($88), first ('C') and last ('T') characters
+    ; C = $43 -> $C3, T = $54 -> $D4
+    db $88, $C3, 'O', 'N', 'S', 'T', 'A', 'N', $D4
+
+    ; Link Field: Points to C_COMMA_NFA
+    dw C_COMMA_NFA
+
+CONSTANT_CFA:
+    dw CONSTANT_code
+
+CONSTANT_code:
+    push bc                     ; Save Forth IP (BC)
+    push de                     ; Save constant value (TOS DE)
+    call HEADER_internal
+    
+    ; Native stack contains: [BC_IP], [constant_value], [NEW_WORD_ADDR]
+    pop iy                      ; IY = NEW_WORD_ADDR
+    pop de                      ; DE = constant_value
+    
+    ; Write CFA (pointing to DOCON behavior)
+    ld a, DOCON & $FF
+    ld (hl), a
+    inc hl
+    ld a, (DOCON >> 8) & $FF
+    ld (hl), a
+    inc hl                      ; HL now points to PFA (DP + L + 5)
+    
+    ; Write constant value (TOS DE) to PFA
+    ld a, e
+    ld (hl), a
+    inc hl
+    ld a, d
+    ld (hl), a
+    inc hl                      ; HL now points to DP + L + 7 (next free location)
+    
+    ; Update U_DP to point to next free location
+    ld (USER_AREA_START + U_DP), hl
+    
+    ; Update U_CURRENT and U_CONTEXT with NEW_WORD_ADDR (saved in IY)
+    ld (USER_AREA_START + U_CURRENT), iy
+    ld (USER_AREA_START + U_CONTEXT), iy
+    
+    ; Pop new TOS (DE) from data stack memory (IX)
+    ld e, (ix+0)
+    ld d, (ix+1)
+    inc ix
+    inc ix
+    
+    pop bc                      ; Restore Forth IP
+    jp NEXT
+
+; Execution behavior for words defined by CONSTANT
+DOCON:
+    ; Push current TOS (DE) to data stack memory (IX)
+    dec ix
+    ld a, d
+    ld (ix+0), a
+    dec ix
+    ld a, e
+    ld (ix+0), a
+    
+    ; HL points to CFA + 1. Advance HL to point to PFA (CFA + 2)
+    inc hl
+    
+    ; Load constant value from PFA (HL) into DE (TOS)
+    ld a, (hl)
+    ld e, a
+    inc hl
+    ld a, (hl)
+    ld d, a
+    
+    jp NEXT
+
+; -----------------------------------------------------------------------------
