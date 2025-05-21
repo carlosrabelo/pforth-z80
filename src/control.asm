@@ -1267,3 +1267,53 @@ VARIABLE_code:
 
 ; Define DOVAR alias for CREATE_execution
 DOVAR: equ CREATE_execution
+
+; -----------------------------------------------------------------------------
+; [COMPILE] ( -- )
+; Forces compilation of an immediate word.
+; This is an IMMEDIATE word.
+; -----------------------------------------------------------------------------
+BRACKET_COMPILE_NFA:
+    ; Name Field: Length 9, bit 7 set (and bit 6 set for IMMEDIATE) = $C9
+    ; '[' = $5B -> $DB, ']' = $5D -> $DD
+    db $C9, $DB, 'C', 'O', 'M', 'P', 'I', 'L', 'E', $DD
+
+    ; Link Field: Points to VARIABLE_NFA
+    dw VARIABLE_NFA
+
+BRACKET_COMPILE_CFA:
+    dw BRACKET_COMPILE_code
+
+BRACKET_COMPILE_code:
+    push bc                     ; Save Forth IP (BC)
+    
+    ; Parse next word name from TIB
+    ld b, 32                    ; space delimiter
+    call WORD_internal          ; Returns DE = parsed token string (HERE)
+    
+    ; Setup IY for FIND_internal
+    push de
+    pop iy
+    call FIND_internal          ; Returns HL = CFA, DE = NFA, A = 1 if found
+    
+    or a
+    jr z, bracket_compile_err
+    
+    ; Word found, HL = CFA. Compile it!
+    ld de, (USER_AREA_START + U_DP)
+    ld a, l
+    ld (de), a
+    inc de
+    ld a, h
+    ld (de), a
+    inc de
+    ld (USER_AREA_START + U_DP), de
+    
+    pop bc                      ; Restore Forth IP
+    jp NEXT
+
+bracket_compile_err:
+    pop bc                      ; Clear Forth IP from stack
+    jp INTERPRET_error          ; Print error message and abort
+
+; -----------------------------------------------------------------------------

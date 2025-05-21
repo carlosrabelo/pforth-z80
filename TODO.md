@@ -91,7 +91,7 @@ Standard pFORTH dictionary expansion and validation.
 - [x] C,
 - [x] CONSTANT
 - [x] VARIABLE
-- [ ] [COMPILE]
+- [x] [COMPILE]
 - [ ] COMPILE
 - [ ] LITERAL
 
