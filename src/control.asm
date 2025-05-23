@@ -1539,3 +1539,69 @@ IF_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
+
+; ELSE ( orig1 -- orig2 )
+; Compiles BRANCH, resolves orig1 to current HERE, and leaves new target on stack.
+; This is an IMMEDIATE word.
+; -----------------------------------------------------------------------------
+ELSE_NFA:
+    ; Name Field: Length 4, bit 7 and bit 6 set (IMMEDIATE) = $C4.
+    ; E = $45 -> $C5
+    db $C4, $C5, 'L', 'S', $C5
+
+    ; Link Field: Points to IF_NFA
+    dw IF_NFA
+
+ELSE_CFA:
+    dw ELSE_code
+
+ELSE_code:
+    ; 1. Compile BRANCH_CFA
+    ld hl, (USER_AREA_START + U_DP)
+    ld a, BRANCH_CFA & $FF
+    ld (hl), a
+    inc hl
+    ld a, (BRANCH_CFA >> 8) & $FF
+    ld (hl), a
+    inc hl                      ; HL points to the dummy target cell of ELSE
+    
+    ; 2. Push orig1 (DE) onto data stack (IX)
+    dec ix
+    ld a, d
+    ld (ix+0), a
+    dec ix
+    ld (ix+0), e
+    
+    ; 3. Set new TOS (DE) to addr_ELSE_target (HL)
+    ld d, h
+    ld e, l
+    
+    ; 4. Compile dummy target address 0 (2 bytes) at HL
+    xor a
+    ld (hl), a
+    inc hl
+    ld (hl), a
+    inc hl                      ; HL now points to addr_after_ELSE
+    
+    ; Update U_DP
+    ld (USER_AREA_START + U_DP), hl
+    
+    ; 5. Resolve orig1 (which is at the top of IX stack) with addr_after_ELSE (HL)
+    ld a, (ix+0)
+    ld iyl, a
+    ld a, (ix+1)
+    ld iyh, a
+    
+    ; Write HL (addr_after_ELSE) to address in IY
+    ld a, l
+    ld (iy+0), a
+    ld a, h
+    ld (iy+1), a
+    
+    ; 6. Pop orig1 from IX stack
+    inc ix
+    inc ix
+    
+    jp NEXT
+
+; -----------------------------------------------------------------------------
