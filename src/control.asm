@@ -1357,3 +1357,50 @@ COMPILE_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
+
+; LITERAL ( x -- )
+; Compiles x into the current definition as a literal value.
+; This is an IMMEDIATE word.
+; -----------------------------------------------------------------------------
+LITERAL_NFA:
+    ; Name Field: Length 7, bit 7 set in length and bit 6 set (IMMEDIATE) = $C7
+    ; L = $4C -> $CC
+    db $C7, $CC, 'I', 'T', 'E', 'R', 'A', $CC
+
+    ; Link Field: Points to COMPILE_NFA
+    dw COMPILE_NFA
+
+LITERAL_CFA:
+    dw LITERAL_code
+
+LITERAL_code:
+    ; 1. Load current DP into HL
+    ld hl, (USER_AREA_START + U_DP)
+    
+    ; 2. Compile LIT_CFA
+    ld a, LIT_CFA & $FF
+    ld (hl), a
+    inc hl
+    ld a, (LIT_CFA >> 8) & $FF
+    ld (hl), a
+    inc hl
+    
+    ; 3. Compile the literal value x (TOS DE)
+    ld a, e
+    ld (hl), a
+    inc hl
+    ld a, d
+    ld (hl), a
+    inc hl
+    
+    ; 4. Update U_DP
+    ld (USER_AREA_START + U_DP), hl
+    
+    ; 5. Pop new TOS (DE) from data stack memory (IX)
+    ld e, (ix+0)
+    ld d, (ix+1)
+    inc ix
+    inc ix
+    
+    jp NEXT
+
