@@ -97,7 +97,7 @@ Standard pFORTH dictionary expansion and validation.
 
 ### Control Flow
 
-- [ ] IF
+- [x] IF
 - [ ] ELSE
 - [ ] THEN
 - [ ] BEGIN
