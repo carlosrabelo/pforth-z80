@@ -99,7 +99,7 @@ Standard pFORTH dictionary expansion and validation.
 
 - [x] IF
 - [x] ELSE
-- [ ] THEN
+- [x] THEN
 - [ ] BEGIN
 - [ ] UNTIL
 - [ ] WHILE
