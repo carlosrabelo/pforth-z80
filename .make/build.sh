@@ -20,6 +20,7 @@ mkdir -p "$OUT_DIR"
 FILES=(
     "main.asm"
     "config.asm"
+    "inner.asm"
 )
 
 for file in "${FILES[@]}"; do
