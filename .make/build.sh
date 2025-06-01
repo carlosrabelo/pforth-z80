@@ -19,6 +19,7 @@ mkdir -p "$OUT_DIR"
 # for test.sh (every file on disk must appear here).
 FILES=(
     "main.asm"
+    "config.asm"
 )
 
 for file in "${FILES[@]}"; do
