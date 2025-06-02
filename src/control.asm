@@ -2006,3 +2006,50 @@ DO_compiler_code:
     ld (USER_AREA_START + U_DP), hl
     
     jp NEXT
+
+; -----------------------------------------------------------------------------
+; LOOP ( -- )
+; Compiles (LOOP) and destination address.
+; This is an IMMEDIATE word.
+; -----------------------------------------------------------------------------
+LOOP_NFA:
+    ; Name Field: Length 4, bit 7 and bit 6 set (IMMEDIATE) = $C4.
+    ; L = $4C -> $CC, P = $50 -> $D0
+    db $C4, $CC, 'O', 'O', $D0
+
+    ; Link Field: Points to DO_NFA
+    dw DO_NFA
+
+LOOP_CFA:
+    dw LOOP_compiler_code
+
+LOOP_compiler_code:
+    ; 1. Compile LOOP_RUN_CFA
+    ld hl, (USER_AREA_START + U_DP)
+    ld a, LOOP_RUN_CFA & $FF
+    ld (hl), a
+    inc hl
+    ld a, (LOOP_RUN_CFA >> 8) & $FF
+    ld (hl), a
+    inc hl                      ; HL points to target cell
+    
+    ; 2. Compile dest (TOS DE) into target cell
+    ld a, e
+    ld (hl), a
+    inc hl
+    ld a, d
+    ld (hl), a
+    inc hl                      ; HL points to next free cell
+    
+    ; Update U_DP
+    ld (USER_AREA_START + U_DP), hl
+    
+    ; 3. Pop new TOS (DE) from data stack memory (IX)
+    ld e, (ix+0)
+    ld d, (ix+1)
+    inc ix
+    inc ix
+    
+    jp NEXT
+
+
