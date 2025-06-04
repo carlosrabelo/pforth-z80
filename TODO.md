@@ -106,7 +106,7 @@ Standard pFORTH dictionary expansion and validation.
 - [x] REPEAT
 - [x] DO
 - [x] LOOP
-- [ ] +LOOP
+- [x] +LOOP
 - [ ] I
 - [ ] LEAVE
 
