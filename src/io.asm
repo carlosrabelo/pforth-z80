@@ -93,6 +93,28 @@ CR_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
+; SPACE ( -- )
+; Outputs a single space character ($20) to port 1.
+; -----------------------------------------------------------------------------
+SPACE_NFA:
+    ; Name Field: Length 5, bit 7 set in first ('S') and last ('E') characters ($85)
+    ; 'S' = $53 -> $D3, 'E' = $45 -> $C5
+    db $85, $D3, 'P', 'A', 'C', $C5
+
+    ; Link Field: Points to CR_NFA
+    dw CR_NFA
+
+SPACE_CFA:
+    dw SPACE_code
+
+SPACE_code:
+    ; Emit space character ($20)
+    ld a, $20
+    call EMIT_char
+    
+    jp NEXT
+
+; -----------------------------------------------------------------------------
 ; WORD ( char -- addr )
 ; -----------------------------------------------------------------------------
 ; Parses the next token from the terminal input buffer (TIB) delimited by char.
@@ -105,7 +127,7 @@ WORD_NFA:
 
     ; Link Field: Points to BYE_NFA
 WORD_LFA:
-    dw CR_NFA
+    dw SPACE_NFA
 
     ; Code Field: Points to the code execution entry
 WORD_CFA:
