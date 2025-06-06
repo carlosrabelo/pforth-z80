@@ -112,7 +112,7 @@ Standard pFORTH dictionary expansion and validation.
 
 ### Formatting & TTY
 
-- [ ] CR
+- [x] CR
 - [ ] SPACE
 - [ ] SPACES
 - [ ] TYPE
