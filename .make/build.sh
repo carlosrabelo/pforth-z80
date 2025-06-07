@@ -21,6 +21,7 @@ FILES=(
     "main.asm"
     "config.asm"
     "inner.asm"
+    "io.asm"
 )
 
 for file in "${FILES[@]}"; do

@@ -11,7 +11,7 @@ Minimal Z80 bootstrap compiler and interactive outer interpreter loop running on
 
 ## Z80 Minimal TTY & Input Processing
 
-- [ ] KEY
+- [x] KEY
 - [ ] EMIT
 - [ ] WORD
 - [ ] NUMBER
