@@ -115,6 +115,57 @@ SPACE_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
+; SPACES ( n -- )
+; Outputs n space characters to port 1.
+; -----------------------------------------------------------------------------
+SPACES_NFA:
+    ; Name Field: Length 6, bit 7 set in first ('S') and last ('S') characters ($86)
+    ; 'S' = $53 -> $D3, 'S' = $53 -> $D3
+    db $86, $D3, 'P', 'A', 'C', 'E', $D3
+
+    ; Link Field: Points to SPACE_NFA
+    dw SPACE_NFA
+
+SPACES_CFA:
+    dw SPACES_code
+
+SPACES_code:
+    ; 1. Check if n (DE) is greater than 0
+    ld a, d
+    and $80
+    jr nz, spaces_done   ; If negative (n < 0), exit
+    
+    ld a, d
+    or e
+    jr z, spaces_done    ; If zero (n == 0), exit
+
+    ; 2. Copy count to HL
+    ld h, d
+    ld l, e
+
+spaces_loop:
+    ; Emit space character ($20)
+    ld a, $20
+    call EMIT_char
+    
+    ; Decrement loop counter HL
+    dec hl
+    
+    ; Test if HL == 0
+    ld a, h
+    or l
+    jr nz, spaces_loop
+
+spaces_done:
+    ; 3. Pop the next value from the data stack (IX) into TOS (DE)
+    ld e, (ix+0)
+    ld d, (ix+1)
+    inc ix
+    inc ix
+    
+    jp NEXT
+
+; -----------------------------------------------------------------------------
 ; WORD ( char -- addr )
 ; -----------------------------------------------------------------------------
 ; Parses the next token from the terminal input buffer (TIB) delimited by char.
@@ -127,7 +178,7 @@ WORD_NFA:
 
     ; Link Field: Points to BYE_NFA
 WORD_LFA:
-    dw SPACE_NFA
+    dw SPACES_NFA
 
     ; Code Field: Points to the code execution entry
 WORD_CFA:
