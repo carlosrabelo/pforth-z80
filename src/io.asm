@@ -166,6 +166,66 @@ spaces_done:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
+; TYPE ( addr u -- )
+; Outputs u characters starting at address addr to port 1.
+; -----------------------------------------------------------------------------
+TYPE_NFA:
+    ; Name Field: Length 4, bit 7 set in first ('T') and last ('E') characters ($84)
+    ; 'T' = $54 -> $D4, 'E' = $45 -> $C5
+    db $84, $D4, 'Y', 'P', $C5
+
+    ; Link Field: Points to SPACES_NFA
+    dw SPACES_NFA
+
+TYPE_CFA:
+    dw TYPE_code
+
+TYPE_code:
+    ; 1. Check if count u (DE) is greater than 0
+    ld a, d
+    and $80
+    jr nz, type_done     ; If negative (u < 0), exit
+    
+    ld a, d
+    or e
+    jr z, type_done      ; If zero (u == 0), exit
+
+    ; 2. Load address addr from stack into HL
+    ld a, (ix+0)
+    ld l, a
+    ld a, (ix+1)
+    ld h, a
+
+type_loop:
+    ; 3. Emit character at HL
+    ld a, (hl)
+    call EMIT_char
+    
+    ; 4. Advance address pointer HL
+    inc hl
+    
+    ; 5. Decrement count DE
+    dec de
+    
+    ; 6. Check if count DE is zero
+    ld a, d
+    or e
+    jr nz, type_loop
+
+type_done:
+    ; 7. Pop next value from stack (which is below addr) into TOS (DE)
+    ld e, (ix+2)
+    ld d, (ix+3)
+    
+    ; 8. Clean up stack: increment IX by 4 (to discard addr and the new TOS from stack)
+    inc ix
+    inc ix
+    inc ix
+    inc ix
+    
+    jp NEXT
+
+; -----------------------------------------------------------------------------
 ; WORD ( char -- addr )
 ; -----------------------------------------------------------------------------
 ; Parses the next token from the terminal input buffer (TIB) delimited by char.
@@ -178,7 +238,7 @@ WORD_NFA:
 
     ; Link Field: Points to BYE_NFA
 WORD_LFA:
-    dw SPACES_NFA
+    dw TYPE_NFA
 
     ; Code Field: Points to the code execution entry
 WORD_CFA:
