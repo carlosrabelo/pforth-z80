@@ -116,7 +116,7 @@ Standard pFORTH dictionary expansion and validation.
 - [x] SPACE
 - [x] SPACES
 - [x] TYPE
-- [ ] EXPECT
+- [x] EXPECT
 
 ---
 
