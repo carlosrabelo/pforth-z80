@@ -349,6 +349,138 @@ expect_done:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
+; . ( n -- )
+; Prints the signed 16-bit number n to port 1, followed by a space.
+; -----------------------------------------------------------------------------
+DOT_NFA:
+    ; Name Field: Length 1, bit 7 set in length ($81) and character '.' ($AE)
+    db $81, $AE
+
+    ; Link Field: Points to EXPECT_NFA
+    dw EXPECT_NFA
+
+DOT_CFA:
+    dw DOT_code
+
+DOT_code:
+    push bc                     ; Save Forth IP (BC)
+    
+    ; The value to print is in TOS (DE)
+    ; We need to load the next value from stack (IX) into DE (new TOS)
+    ; And use the old TOS (DE) for printing.
+    ld h, d
+    ld l, e                     ; HL = value to print n
+
+    ld e, (ix+0)
+    ld d, (ix+1)
+    inc ix
+    inc ix                      ; DE now has new TOS
+
+    ; Check for negative number
+    bit 7, h
+    jr z, dot_positive
+
+    ; Print '-'
+    push hl
+    ld a, '-'
+    call EMIT_char
+    pop hl
+
+    ; Negate HL
+    ld a, l
+    cpl
+    ld l, a
+    ld a, h
+    cpl
+    ld h, a
+    inc hl                      ; HL = absolute value of n
+
+dot_positive:
+    ; Load base
+    ld a, (USER_AREA_START + U_BASE)
+    ld c, a                     ; C = BASE
+
+    ; Initialize buffer pointer to the end of the buffer
+    ld iy, dot_buffer + 15
+    xor a
+    ld (iy+0), a
+
+dot_conv_loop:
+    ; Divide HL by C (BASE). HL = HL / C, A = HL % C
+    call div_hl_c
+    
+    ; Convert digit in A to ASCII
+    cp 10
+    jr c, dot_digit_0_9
+    add a, 'A' - 10 - '0'
+dot_digit_0_9:
+    add a, '0'
+
+    ; Store in buffer
+    dec iy
+    ld (iy+0), a
+
+    ; Check if HL is 0
+    ld a, h
+    or l
+    jr nz, dot_conv_loop
+
+    ; Print the string in buffer starting at IY
+dot_print_loop:
+    ld a, (iy+0)
+    or a
+    jr z, dot_print_done
+    call EMIT_char
+    inc iy
+    jr dot_print_loop
+
+dot_print_done:
+    ; Print space at the end
+    ld a, ' '
+    call EMIT_char
+
+    pop bc                      ; Restore Forth IP (BC)
+    jp NEXT
+
+; Helper: division of HL by C. HL = HL / C, A = HL % C
+div_hl_c:
+    ld a, 0
+    ld b, 16                    ; Loop 16 times
+div_hl_c_loop:
+    add hl, hl
+    rla
+    cp c
+    jr c, div_hl_c_skip
+    sub c
+    inc l
+div_hl_c_skip:
+    dec b
+    jr nz, div_hl_c_loop
+    ret
+
+; Buffer for number formatting
+dot_buffer:
+    defs 16
+
+; -----------------------------------------------------------------------------
+; BYE ( -- )
+; Halts the Z80 CPU, causing z88dk-ticks to terminate.
+; -----------------------------------------------------------------------------
+BYE_NFA:
+    ; Name Field: Length 3, bit 7 set in first ('B') and last ('E') characters ($83)
+    ; 'B' = $42 -> $C2, 'Y' = $59, 'E' = $45 -> $C5
+    db $83, $C2, 'Y', $C5
+
+    ; Link Field: Points to DOT_NFA
+    dw DOT_NFA
+
+BYE_CFA:
+    dw BYE_code
+
+BYE_code:
+    halt
+
+; -----------------------------------------------------------------------------
 ; WORD ( char -- addr )
 ; -----------------------------------------------------------------------------
 ; Parses the next token from the terminal input buffer (TIB) delimited by char.
@@ -361,7 +493,7 @@ WORD_NFA:
 
     ; Link Field: Points to BYE_NFA
 WORD_LFA:
-    dw EXPECT_NFA
+    dw BYE_NFA
 
     ; Code Field: Points to the code execution entry
 WORD_CFA:
