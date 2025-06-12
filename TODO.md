@@ -129,4 +129,4 @@ Forth demonstration applications.
 - [x] Sieve of Eratosthenes benchmark
 - [x] Block-based line editor
 - [x] Mini text adventure game
-- [ ] WORDS and DUMP system tools
+- [x] WORDS and DUMP system tools
