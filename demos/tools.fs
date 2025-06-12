@@ -1,0 +1,112 @@
+VARIABLE STR-EQUAL
+VARIABLE APTR1
+VARIABLE APTR2
+
+: STR-EQ
+  1 STR-EQUAL !
+  APTR2 ! APTR1 !
+  0 DO
+    APTR1 @ C@ APTR2 @ C@ = IF
+      1 APTR1 +!  1 APTR2 +!
+    ELSE
+      0 STR-EQUAL !
+      1 APTR1 +!  1 APTR2 +!
+    THEN
+  LOOP
+  STR-EQUAL @ ;
+
+: IS-Z80
+  57344 @ 63488 = ;
+
+: LATEST
+  IS-Z80 IF
+    57360
+  ELSE
+    36
+  THEN ;
+
+: .NAME
+  DUP C@ 31 AND
+  ROT 1 +
+  SWAP 0 DO
+    DUP I + C@ 127 AND EMIT
+  LOOP
+  DROP ;
+
+: PREV-NFA
+  DUP C@ 31 AND + 1 + @ ;
+
+: WORDS
+  LATEST @
+  BEGIN
+    DUP 0 >
+  WHILE
+    DUP .NAME 32 EMIT
+    PREV-NFA
+  REPEAT
+  DROP CR ;
+
+: .HEX-DIGIT
+  15 AND
+  DUP 10 < IF
+    48 + EMIT
+  ELSE
+    55 + EMIT
+  THEN ;
+
+: .HEX-BYTE
+  DUP 16 / .HEX-DIGIT
+  .HEX-DIGIT ;
+
+: .HEX-ADDR
+  DUP 256 /
+  .HEX-BYTE
+  255 AND
+  .HEX-BYTE ;
+
+: .HEX-BYTES
+  16 0 DO
+    I OVER < IF
+      DUP I + C@ .HEX-BYTE 32 EMIT
+    ELSE
+      32 EMIT 32 EMIT 32 EMIT
+    THEN
+  LOOP
+  DROP ;
+
+: .ASCII-BYTES
+  124 EMIT 32 EMIT
+  16 0 DO
+    I OVER < IF
+      DUP I + C@
+      DUP 31 > OVER 127 < AND IF
+        EMIT
+      ELSE
+        DROP 46 EMIT
+      THEN
+    ELSE
+      32 EMIT
+    THEN
+  LOOP
+  DROP ;
+
+: .DUMP-LINE
+  OVER .HEX-ADDR 58 EMIT 32 EMIT
+  OVER OVER .HEX-BYTES
+  32 EMIT
+  .ASCII-BYTES CR ;
+
+: DUMP
+  BEGIN
+    DUP 0 >
+  WHILE
+    OVER OVER
+    DUP 16 > IF DROP 16 THEN
+    .DUMP-LINE
+    DUP 16 > IF
+      16 - SWAP 16 + SWAP
+    ELSE
+      DROP DROP 0
+    THEN
+  REPEAT
+  DROP DROP ;
