@@ -29,7 +29,7 @@ start_end:
 ; -----------------------------------------------------------------------------
 ; Dictionary Entry Point configuration
 ; -----------------------------------------------------------------------------
-LAST_NFA: equ STATE_NFA
+LAST_NFA: equ INTERPRET_NFA
 
 ; -----------------------------------------------------------------------------
 ; End of Assembly-compiled Forth. Next memory is dynamically allocated.
