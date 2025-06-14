@@ -643,8 +643,3 @@ EXECUTE_code:
 
     ; Jump to the target code. HL is left pointing to (CFA + 1).
     jp (iy)
-
-; Scaffold: character output helper (moves to control.asm with QUIT)
-EMIT_char:
-    out (TTY_DATA_PORT), a
-    ret

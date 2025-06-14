@@ -257,8 +257,448 @@ INTERPRET_done:
     ld bc, (SAVED_IP)
     ret
 
+; -----------------------------------------------------------------------------
+; QUIT ( -- )
+; -----------------------------------------------------------------------------
+; Clears the return stack, sets interpretation state, and starts the main
+; interactive console loop reading from TIB.
+; -----------------------------------------------------------------------------
+QUIT_NFA:
+    ; Name Field: Length 4, bit 7 set in first and last characters
+    db $84, 'Q', 'U', 'I', $D4
 
-; Scaffold: INTERPRET dispatch buffers and QUIT restart (replaced by QUIT)
+    ; Link Field: Points to previous word's NFA (INTERPRET_NFA)
+    dw INTERPRET_NFA
+
+    ; Code Field: Points to the code execution entry
+    dw QUIT_CFA
+QUIT_CFA:
+    dw QUIT_code
+
+QUIT_code:
+    ; Reset the Return Stack Pointer (RSP)
+    ld sp, RETURN_STACK_BOTTOM
+
+    ld hl, welcome_msg
+    call print_string
+    jp QUIT_restart
+
+print_string:
+    ld a, (hl)
+    or a
+    ret z
+    call EMIT_char
+    inc hl
+    jr print_string
+
+welcome_msg:
+    db "pForth Z80 ready", $0d, $0a, 0
+
+QUIT_restart:
+    ; Clear interpretation state (STATE = 0)
+    xor a
+    ld (USER_AREA_START + U_STATE), a
+
+    ; Clear data stack (DSP = DATA_STACK_BOTTOM, TOS = 0)
+    ld ix, DATA_STACK_BOTTOM
+    ld de, 0
+
+QUIT_prompt_loop:
+    ; Print prompt OK if STATE is 0
+    ld a, (USER_AREA_START + U_STATE)
+    or a
+    jr nz, QUIT_no_prompt
+    
+    ; Print prompt "OK" followed by newline
+    ld a, 'O'
+    call EMIT_char
+    ld a, 'K'
+    call EMIT_char
+    ld a, $0d
+    call EMIT_char
+    ld a, $0a
+    call EMIT_char
+
+QUIT_no_prompt:
+    ; Read line to TIB using inline line editor
+    ld c, 0                     ; C = size of line
+    ld b, 0                     ; B = cursor position (offset from TIB start)
+    push de                     ; Save Forth TOS cache to native stack during line editing
+
+QUIT_read_loop:
+    ; Read character from port 1 (z88dk-ticks -iochar=1)
+    in a, (TTY_DATA_PORT)
+    
+    ld d, a                     ; Save character in D
+
+    ; Check if carriage return ($0D) or line feed ($0A)
+    cp $0d
+    jp z, QUIT_line_done
+    cp $0a
+    jp z, QUIT_line_done
+
+    ; Check backspace ($08 or $7F)
+    cp $08
+    jp z, QUIT_handle_backspace
+    cp $7f
+    jp z, QUIT_handle_backspace
+
+    ; Check escape sequence ($1B)
+    cp $1b
+    jp z, QUIT_handle_escape
+
+    ; Check if character is printable (ASCII space to tilde)
+    cp ' '
+    jp c, QUIT_read_loop        ; Ignore non-printable
+    cp $7f
+    jp nc, QUIT_read_loop
+
+    ; Store character if there is space in TIB
+    ld a, c
+    cp TIB_SIZE - 2
+    jp nc, QUIT_read_loop       ; Buffer full, ignore
+
+    ; Save TOS original DE and character D on stack
+    push de
+
+    ; Insert character: check if cursor B is at the end of line C
+    ld a, b
+    cp c
+    jp z, QUIT_insert_end_from_mid
+
+    ; Cursor is in the middle: shift characters to the right
+    push hl
+    push bc
+    ld hl, (USER_AREA_START + U_TIB)
+    ld e, c
+    ld d, 0
+    add hl, de                  ; DE = TIB + C (destination)
+    push hl
+    pop de
+    dec hl                      ; HL = TIB + C - 1 (source)
+    
+    ld a, c
+    sub b
+    ld c, a
+    ld b, 0                     ; BC = count
+    lddr                        ; Shift right
+    pop bc
+    pop hl
+
+    ; Store character at cursor B
+    ld hl, (USER_AREA_START + U_TIB)
+    ld e, b
+    ld d, 0
+    add hl, de                  ; HL = TIB + B
+    
+    ; Restore character D (and TOS DE) temporarily to write it
+    pop de
+    ld (hl), d                  ; Store
+    push de                     ; Push back to restore at the end of redraw
+
+    inc b
+    inc c
+
+    ; Redraw screen from cursor B-1 to the end
+    push hl
+    push bc
+    ld hl, (USER_AREA_START + U_TIB)
+    ld e, b
+    dec e
+    ld d, 0
+    add hl, de                  ; HL = TIB + B - 1
+    
+    ld a, c
+    sub b
+    inc a
+    ld c, a                     ; C = remaining chars to print
+QUIT_redraw_loop_insert:
+    ld a, (hl)
+    call EMIT_char
+    inc hl
+    dec c
+    jr nz, QUIT_redraw_loop_insert
+    
+    ; Restore cursor physical position: move back by (C - B) positions
+    pop bc
+    push bc
+    ld a, c
+    sub b
+    jp z, QUIT_redraw_insert_done
+    ld c, a
+QUIT_restore_cursor_insert:
+    ld a, $08
+    call EMIT_char
+    dec c
+    jr nz, QUIT_restore_cursor_insert
+QUIT_redraw_insert_done:
+    pop bc
+    pop hl
+    pop de                      ; Restore TOS original DE
+    jp QUIT_read_loop
+
+QUIT_insert_end_from_mid:
+    ; Store character in TIB
+    ld hl, (USER_AREA_START + U_TIB)
+    ld e, b
+    ld d, 0
+    add hl, de
+    
+    pop de                      ; Restore character D and TOS DE
+    ld (hl), d
+    
+    inc b
+    inc c
+
+    ; Echo character
+    ld a, d
+    call EMIT_char
+    jp QUIT_read_loop
+
+QUIT_handle_backspace:
+    ; Check if cursor B > 0
+    ld a, b
+    or a
+    jp z, QUIT_read_loop        ; Nothing to erase
+
+    dec b
+    dec c
+
+    ; Check if cursor was at the end of line
+    ld a, b
+    cp c
+    jp z, QUIT_backspace_end
+
+    ; Cursor was in the middle: shift characters to the left
+    push de                     ; Save TOS original DE
+    push hl
+    push bc
+    ld hl, (USER_AREA_START + U_TIB)
+    ld e, b
+    ld d, 0
+    add hl, de                  ; DE = TIB + B (destination)
+    push hl
+    pop de
+    inc hl                      ; HL = TIB + B + 1 (source)
+    
+    ld a, c
+    sub b
+    ld c, a
+    ld b, 0                     ; BC = count
+    ldir                        ; Shift left
+    pop bc
+    pop hl
+
+    ; Echo backspace visual and redraw remaining chars
+    ld a, $08
+    call EMIT_char
+
+    push hl
+    push bc
+    ld hl, (USER_AREA_START + U_TIB)
+    ld e, b
+    ld d, 0
+    add hl, de                  ; HL = TIB + B
+    
+    ld a, c
+    sub b
+    ld c, a                     ; C = remaining chars
+QUIT_redraw_loop_bs:
+    ld a, (hl)
+    call EMIT_char
+    inc hl
+    dec c
+    jr nz, QUIT_redraw_loop_bs
+
+    ; Print space to clear trailing char
+    ld a, ' '
+    call EMIT_char
+
+    ; Restore cursor position: move back by (C - B + 1)
+    pop bc
+    push bc
+    ld a, c
+    sub b
+    inc a
+    ld c, a
+QUIT_restore_cursor_bs:
+    ld a, $08
+    call EMIT_char
+    dec c
+    jr nz, QUIT_restore_cursor_bs
+    pop bc
+    pop hl
+    pop de                      ; Restore TOS original DE
+    jp QUIT_read_loop
+
+QUIT_backspace_end:
+    ; Echo backspace visual (BS, space, BS)
+    ld a, $08
+    call EMIT_char
+    ld a, ' '
+    call EMIT_char
+    ld a, $08
+    call EMIT_char
+    jp QUIT_read_loop
+
+QUIT_handle_delete:
+    ; Check if cursor B < size C
+    ld a, b
+    cp c
+    jp nc, QUIT_read_loop        ; Nothing to delete
+
+    push de                     ; Save TOS original DE
+    dec c
+
+    ; Shift characters to the left
+    push hl
+    push bc
+    ld hl, (USER_AREA_START + U_TIB)
+    ld e, b
+    ld d, 0
+    add hl, de                  ; DE = TIB + B (destination)
+    push hl
+    pop de
+    inc hl                      ; HL = TIB + B + 1 (source)
+    
+    ld a, c
+    sub b
+    ld c, a
+    ld b, 0                     ; BC = count
+    ldir                        ; Shift left
+    pop bc
+    pop hl
+
+    ; Redraw remaining chars
+    push hl
+    push bc
+    ld hl, (USER_AREA_START + U_TIB)
+    ld e, b
+    ld d, 0
+    add hl, de                  ; HL = TIB + B
+    
+    ld a, c
+    sub b
+    jr z, QUIT_del_last_char    ; If count became B, it was the last char
+    ld c, a                     ; C = remaining chars
+QUIT_redraw_loop_del:
+    ld a, (hl)
+    call EMIT_char
+    inc hl
+    dec c
+    jr nz, QUIT_redraw_loop_del
+
+QUIT_del_last_char:
+    ; Print space to clear trailing char
+    ld a, ' '
+    call EMIT_char
+
+    ; Restore cursor position: move back by (C - B + 1)
+    pop bc
+    push bc
+    ld a, c
+    sub b
+    inc a
+    ld c, a
+QUIT_restore_cursor_del:
+    ld a, $08
+    call EMIT_char
+    dec c
+    jr nz, QUIT_restore_cursor_del
+    pop bc
+    pop hl
+    pop de                      ; Restore TOS original DE
+    jp QUIT_read_loop
+
+QUIT_handle_escape:
+    ; Wait for '['
+    in a, (TTY_DATA_PORT)
+    
+    cp '['
+    jp nz, QUIT_read_loop       ; Not escape sequence we handle
+
+    ; Wait for third char ('A', 'B', 'C', 'D' or '3')
+    in a, (TTY_DATA_PORT)
+
+    cp 'D'                      ; Left arrow
+    jp z, QUIT_esc_left
+    cp 'C'                      ; Right arrow
+    jp z, QUIT_esc_right
+    cp '3'                      ; DEL (may send ESC [ 3 ~)
+    jp z, QUIT_esc_del
+    jp QUIT_read_loop
+
+QUIT_esc_left:
+    ld a, b
+    or a
+    jp z, QUIT_read_loop        ; Already at the beginning
+    
+    dec b
+    ld a, $08
+    call EMIT_char
+    jp QUIT_read_loop
+
+QUIT_esc_right:
+    ld a, b
+    cp c
+    jp nc, QUIT_read_loop       ; Already at the end
+
+    push de                     ; Save TOS original DE
+    ; Read character from buffer at B and print it to move cursor right
+    push hl
+    push bc
+    ld hl, (USER_AREA_START + U_TIB)
+    ld e, b
+    ld d, 0
+    add hl, de
+    ld a, (hl)
+    call EMIT_char
+    pop bc
+    pop hl
+    pop de                      ; Restore TOS original DE
+    inc b
+    jp QUIT_read_loop
+
+QUIT_esc_del:
+    ; Wait for '~'
+    in a, (TTY_DATA_PORT)
+    
+    jp QUIT_handle_delete
+
+QUIT_line_done:
+    ; Terminate line with Carriage Return ($0D) in TIB
+    ld hl, (USER_AREA_START + U_TIB)
+    ld e, c
+    ld d, 0
+    add hl, de
+    ld (hl), $0d
+
+    ; Echo newline
+    ld a, $0d
+    call EMIT_char
+    ld a, $0a
+    call EMIT_char
+
+    ; Reset input offset (U_IN = 0)
+    ld hl, 0
+    ld (USER_AREA_START + U_IN), hl
+
+    pop de                      ; Restore Forth TOS cache before running interpreter
+
+    ; Call interpreter
+    call INTERPRET_internal
+
+    ; Back to loop
+    jp QUIT_prompt_loop
+
+; Helper to write a character to port 1 (z88dk-ticks -iochar=1)
+EMIT_char:
+    out (TTY_DATA_PORT), a
+    ret
+
+; -----------------------------------------------------------------------------
+; Static buffers for INTERPRET execution dispatch
+; -----------------------------------------------------------------------------
 SAVED_IP:    dw 0
 SAVED_TOS:   dw 0
 EXEC_BUF:    dw 0
@@ -269,5 +709,3 @@ RESUME_CFA:  dw RESUME_code
 RESUME_code:
     jp INTERPRET_loop
 
-QUIT_restart:
-    jp start

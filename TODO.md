@@ -23,7 +23,7 @@ Minimal Z80 bootstrap compiler and interactive outer interpreter loop running on
 - [x] STATE
 - [x] LIT
 - [x] INTERPRET
-- [ ] QUIT
+- [x] QUIT
 - [ ] COLD
 - [ ] [
 - [ ] ]
