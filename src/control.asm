@@ -920,3 +920,47 @@ IMMEDIATE_code:
 
 ; -----------------------------------------------------------------------------
 
+; : (colon) ( -- )
+; Starts compilation of a new colon definition.
+; -----------------------------------------------------------------------------
+COLON_NFA:
+    ; Name Field: Length 1, bit 7 set in first and last character
+    ; Length 1 with bit 7 set = $81
+    ; Character ':' (ASCII $3A) with bit 7 set = $BA
+    db $81, $BA
+
+    ; Link Field: Points to previous word's NFA (IMMEDIATE_NFA)
+    dw IMMEDIATE_NFA
+
+COLON_CFA:
+    dw COLON_code
+
+COLON_code:
+    push bc                     ; Save Forth IP (BC)
+    call HEADER_internal
+    
+    ; Write CFA (pointing to DOCOL)
+    ld a, DOCOL & $FF
+    ld (hl), a
+    inc hl
+    ld a, (DOCOL >> 8) & $FF
+    ld (hl), a
+    inc hl                      ; HL points to PFA
+    
+    ; Update U_DP to point to PFA (HL)
+    ld (USER_AREA_START + U_DP), hl
+    
+    ; Update U_CURRENT and U_CONTEXT with the NEW_WORD_ADDR (saved on stack)
+    pop hl                      ; HL = NEW_WORD_ADDR
+    ld (USER_AREA_START + U_CURRENT), hl
+    ld (USER_AREA_START + U_CONTEXT), hl
+    
+    ; Enter compilation mode: STATE = 1
+    ld a, 1
+    ld (USER_AREA_START + U_STATE), a
+    
+    pop bc                      ; Restore Forth IP (BC)
+    jp NEXT
+
+; -----------------------------------------------------------------------------
+

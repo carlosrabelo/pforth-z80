@@ -30,7 +30,7 @@ Minimal Z80 bootstrap compiler and interactive outer interpreter loop running on
 - [x] CREATE
 - [x] ,
 - [x] IMMEDIATE
-- [ ] :
+- [x] :
 - [ ] ;
 
 ## Test Automation
