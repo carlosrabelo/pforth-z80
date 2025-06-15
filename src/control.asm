@@ -752,3 +752,104 @@ RBRACKET_code:
 
 ; -----------------------------------------------------------------------------
 
+; CREATE ( -- )
+; Parses the next word name from the input stream and creates a new dictionary
+; entry for it. When the created word is later executed, it will push the
+; address of its parameter field (PFA) onto the data stack.
+; -----------------------------------------------------------------------------
+CREATE_NFA:
+    ; Name Field: Length 6, bit 7 set in first and last characters
+    db $86, 'C', 'R', 'E', 'A', 'T', $C5
+
+    ; Link Field: Points to previous word's NFA (RBRACKET_NFA)
+    dw RBRACKET_NFA
+
+    ; Code Field: Points to the code execution entry
+    dw CREATE_CFA
+CREATE_CFA:
+    dw CREATE_code
+
+CREATE_code:
+    push bc                     ; Save Forth IP (BC)
+    call HEADER_internal
+    
+    ; Write CFA (pointing to CREATE_execution)
+    ld a, CREATE_execution & $FF
+    ld (hl), a
+    inc hl
+    ld a, (CREATE_execution >> 8) & $FF
+    ld (hl), a
+    inc hl                      ; HL now points to PFA (DP + L + 5)
+    
+    ; Update U_DP to point to PFA (HL)
+    ld (USER_AREA_START + U_DP), hl
+    
+    ; Update U_CURRENT and U_CONTEXT with the NEW_WORD_ADDR (saved on stack)
+    pop hl                      ; HL = NEW_WORD_ADDR
+    ld (USER_AREA_START + U_CURRENT), hl
+    ld (USER_AREA_START + U_CONTEXT), hl
+    
+    pop bc                      ; Restore Forth IP (BC)
+    jp NEXT
+
+; Internal helper to build a new word header in the dictionary
+; Returns HL pointing to CFA, and pushes NEW_WORD_ADDR onto the stack.
+HEADER_internal:
+    ; 1. Parse word name from TIB using space delimiter (ASCII 32)
+    ld b, 32                    ; space delimiter
+    call WORD_internal          ; WORD_internal parses name into DP (HERE)
+    
+    ; DP now contains the counted string. Let's load NEW_WORD_ADDR (DP) to HL
+    ld hl, (USER_AREA_START + U_DP)
+    ex (sp), hl                 ; Swap return address with HL (HL = return address, stack has NEW_WORD_ADDR)
+    push hl                     ; Re-push return address (stack now has [NEW_WORD_ADDR, return address])
+    
+    ; Load original DP back to HL to work on it
+    ld hl, (USER_AREA_START + U_DP)
+    
+    ; Read length L from (HL)
+    ld a, (hl)
+    ld b, a                     ; B = length L
+    
+    ; Set bit 7 of the length byte to build NFA
+    or $80
+    ld (hl), a
+    
+    ; Calculate address of the last character: HL = DP + L
+    ld c, b
+    ld b, 0                     ; BC = length L
+    add hl, bc                  ; HL points to the last character of the name
+    
+    ; Set bit 7 of the last character
+    ld a, (hl)
+    or $80
+    ld (hl), a
+    inc hl                      ; HL now points to LFA (DP + L + 1)
+    
+    ; 2. Write LFA (pointing to previous word's NFA from U_CURRENT)
+    ld a, (USER_AREA_START + U_CURRENT)
+    ld (hl), a
+    inc hl
+    ld a, (USER_AREA_START + U_CURRENT + 1)
+    ld (hl), a
+    inc hl                      ; HL now points to CFA (DP + L + 3)
+    ret
+
+; Default execution behavior for words defined by CREATE
+CREATE_execution:
+    ; Push current TOS (DE) onto the data stack (IX)
+    dec ix
+    ld (ix+0), d
+    dec ix
+    ld (ix+0), e
+    
+    ; HL points to CFA + 1. Increment HL to point to PFA (CFA + 2)
+    inc hl
+    
+    ; Load PFA (HL) into TOS (DE)
+    ld d, h
+    ld e, l
+    jp NEXT
+
+; -----------------------------------------------------------------------------
+

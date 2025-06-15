@@ -27,7 +27,7 @@ Minimal Z80 bootstrap compiler and interactive outer interpreter loop running on
 - [x] COLD
 - [x] [
 - [x] ]
-- [ ] CREATE
+- [x] CREATE
 - [ ] ,
 - [ ] IMMEDIATE
 - [ ] :
