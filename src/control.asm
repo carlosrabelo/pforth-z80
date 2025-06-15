@@ -731,3 +731,24 @@ LBRACKET_code:
 
 ; -----------------------------------------------------------------------------
 
+; ] ( -- )
+; Sets compilation state (STATE = 1).
+; -----------------------------------------------------------------------------
+RBRACKET_NFA:
+    ; Name Field: Length 1, bit 7 set in first and last characters
+    db $81, $DD
+
+    ; Link Field: Points to previous word's NFA (LBRACKET_NFA)
+    dw LBRACKET_NFA
+
+    ; Code Field: Points to the code execution entry
+RBRACKET_CFA:
+    dw RBRACKET_code
+
+RBRACKET_code:
+    ld a, 1
+    ld (USER_AREA_START + U_STATE), a
+    jp NEXT
+
+; -----------------------------------------------------------------------------
+
