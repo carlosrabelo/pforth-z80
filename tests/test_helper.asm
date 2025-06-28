@@ -80,8 +80,9 @@ cold_start_end:
     include "src/inner.asm"
     include "src/io.asm"
     include "src/control.asm"
+    include "src/stack.asm"
 
-LAST_NFA: equ SEMICOLON_NFA
+LAST_NFA: equ DUP_NFA
 
 ; =============================================================================
 ; Test Assertions and Utilities

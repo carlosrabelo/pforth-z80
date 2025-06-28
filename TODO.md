@@ -47,7 +47,7 @@ Standard pFORTH dictionary expansion and validation.
 
 ### Stack Manipulation
 
-- [ ] DUP
+- [x] DUP
 - [ ] DROP
 - [ ] SWAP
 - [ ] OVER

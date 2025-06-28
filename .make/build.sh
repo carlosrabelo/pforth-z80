@@ -23,6 +23,7 @@ FILES=(
     "inner.asm"
     "io.asm"
     "control.asm"
+    "stack.asm"
 )
 
 for file in "${FILES[@]}"; do
