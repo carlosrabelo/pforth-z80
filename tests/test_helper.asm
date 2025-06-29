@@ -82,7 +82,7 @@ cold_start_end:
     include "src/control.asm"
     include "src/stack.asm"
 
-LAST_NFA: equ DUP_NFA
+LAST_NFA: equ DROP_NFA
 
 ; =============================================================================
 ; Test Assertions and Utilities
