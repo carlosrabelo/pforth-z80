@@ -82,3 +82,32 @@ SWAP_code:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; OVER ( x1 x2 -- x1 x2 x1 )
+; Copies the second element on the stack to the top of the stack.
+; -----------------------------------------------------------------------------
+OVER_NFA:
+    ; Name Field: Length 4, bit 7 set in length ($84), first ('O') and last ('R') characters
+    db $84, $CF, 'V', 'E', $D2
+
+    ; Link Field: Points to SWAP_NFA
+    dw SWAP_NFA
+
+OVER_CFA:
+    dw OVER_code
+
+OVER_code:
+    ; Push the current TOS (DE) onto the data stack memory
+    dec ix
+    ld (ix+0), d
+    dec ix
+    ld (ix+0), e
+    
+    ; Load the old second element (now at ix+2) into TOS (DE)
+    ld a, (ix+2)
+    ld e, a
+    ld a, (ix+3)
+    ld d, a
+    
+    jp NEXT
+
