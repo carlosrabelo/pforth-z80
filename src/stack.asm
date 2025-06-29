@@ -53,3 +53,32 @@ DROP_code:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; SWAP ( x1 x2 -- x2 x1 )
+; Swaps the top two elements of the data stack.
+; -----------------------------------------------------------------------------
+SWAP_NFA:
+    ; Name Field: Length 4, bit 7 set in length ($84), first ('S') and last ('P') characters
+    db $84, $D3, 'W', 'A', $D0
+
+    ; Link Field: Points to DROP_NFA
+    dw DROP_NFA
+
+SWAP_CFA:
+    dw SWAP_code
+
+SWAP_code:
+    ; Swap the TOS (DE) with the second element on the stack (at IX)
+    ld a, (ix+0)
+    ld l, a
+    ld a, (ix+1)
+    ld h, a
+    
+    ld (ix+0), e
+    ld (ix+1), d
+    
+    ld d, h
+    ld e, l
+    
+    jp NEXT
+
