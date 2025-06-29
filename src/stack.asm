@@ -111,3 +111,43 @@ OVER_code:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; ROT ( x1 x2 x3 -- x2 x3 x1 )
+; Rotates the top three elements of the stack, moving the third to the top.
+; -----------------------------------------------------------------------------
+ROT_NFA:
+    ; Name Field: Length 3, bit 7 set in length ($83), first ('R') and last ('T') characters
+    db $83, $D2, 'O', $D4
+
+    ; Link Field: Points to OVER_NFA
+    dw OVER_NFA
+
+ROT_CFA:
+    dw ROT_code
+
+ROT_code:
+    ; Rotate the top three elements ( x1 x2 x3 -- x2 x3 x1 )
+    ; Load x2 from (ix+0) into HL
+    ld a, (ix+0)
+    ld l, a
+    ld a, (ix+1)
+    ld h, a
+    
+    ; Store x3 (DE) into (ix+0)
+    ld (ix+0), e
+    ld (ix+1), d
+    
+    ; Load x1 from (ix+2) into DE
+    ld a, (ix+2)
+    ld e, a
+    ld a, (ix+3)
+    ld d, a
+    
+    ; Store x2 (HL) into (ix+2)
+    ld a, l
+    ld (ix+2), a
+    ld a, h
+    ld (ix+3), a
+    
+    jp NEXT
+
