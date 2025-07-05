@@ -87,7 +87,7 @@ cold_start_end:
 ; -----------------------------------------------------------------------------
 ; Dictionary Entry Point configuration
 ; -----------------------------------------------------------------------------
-LAST_NFA: equ QDUP_NFA
+LAST_NFA: equ TO_R_NFA
 
 ; -----------------------------------------------------------------------------
 ; End of Assembly-compiled Forth. Next memory is dynamically allocated.

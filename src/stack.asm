@@ -180,3 +180,31 @@ QDUP_code:
 qdup_skip:
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; >R ( x -- )
+; Moves the top of the data stack to the return stack.
+; -----------------------------------------------------------------------------
+TO_R_NFA:
+    ; Name Field: Length 2, bit 7 set in length ($82), first ('>') and last ('R') characters
+    db $82, $BE, $D2
+
+    ; Link Field: Points to QDUP_NFA
+    dw QDUP_NFA
+
+TO_R_CFA:
+    dw TO_R_code
+
+TO_R_code:
+    ; Push the current TOS (DE) onto the return stack (SP)
+    push de
+    
+    ; Load the new TOS from the data stack (IX) and adjust DSP (IX)
+    ld a, (ix+0)
+    ld e, a
+    ld a, (ix+1)
+    ld d, a
+    inc ix
+    inc ix
+    
+    jp NEXT
+
