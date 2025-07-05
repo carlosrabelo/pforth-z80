@@ -208,3 +208,29 @@ TO_R_code:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; R> ( -- x )
+; Moves the top of the return stack to the data stack.
+; -----------------------------------------------------------------------------
+FROM_R_NFA:
+    ; Name Field: Length 2, bit 7 set in length ($82), first ('R') and last ('>') characters
+    db $82, $D2, $BE
+
+    ; Link Field: Points to TO_R_NFA
+    dw TO_R_NFA
+
+FROM_R_CFA:
+    dw FROM_R_code
+
+FROM_R_code:
+    ; Push the current TOS (DE) onto the data stack memory
+    dec ix
+    ld (ix+0), d
+    dec ix
+    ld (ix+0), e
+    
+    ; Pop the top of the return stack (SP) into TOS (DE)
+    pop de
+    
+    jp NEXT
+
