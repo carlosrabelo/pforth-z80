@@ -151,3 +151,32 @@ ROT_code:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; ?DUP ( x -- [x] x )
+; Duplicates the top of the stack if it is non-zero.
+; -----------------------------------------------------------------------------
+QDUP_NFA:
+    ; Name Field: Length 4, bit 7 set in length ($84), first ('?') and last ('P') characters
+    db $84, $BF, 'D', 'U', $D0
+
+    ; Link Field: Points to ROT_NFA
+    dw ROT_NFA
+
+QDUP_CFA:
+    dw QDUP_code
+
+QDUP_code:
+    ; Check if TOS (DE) is zero
+    ld a, d
+    or e
+    jr z, qdup_skip
+    
+    ; Duplicate TOS onto the data stack memory
+    dec ix
+    ld (ix+0), d
+    dec ix
+    ld (ix+0), e
+    
+qdup_skip:
+    jp NEXT
+
