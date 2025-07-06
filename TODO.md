@@ -59,7 +59,7 @@ Standard pFORTH dictionary expansion and validation.
 
 ### Memory & Register Access
 
-- [ ] @
+- [x] @
 - [ ] !
 - [ ] C@
 - [ ] C!

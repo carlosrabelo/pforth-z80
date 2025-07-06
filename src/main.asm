@@ -83,11 +83,12 @@ cold_start_end:
     include "src/io.asm"
     include "src/control.asm"
     include "src/stack.asm"
+    include "src/memory.asm"
 
 ; -----------------------------------------------------------------------------
 ; Dictionary Entry Point configuration
 ; -----------------------------------------------------------------------------
-LAST_NFA: equ R_FETCH_NFA
+LAST_NFA: equ FETCH_NFA
 
 ; -----------------------------------------------------------------------------
 ; End of Assembly-compiled Forth. Next memory is dynamically allocated.
