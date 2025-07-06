@@ -83,7 +83,7 @@ cold_start_end:
     include "src/stack.asm"
     include "src/memory.asm"
 
-LAST_NFA: equ FETCH_NFA
+LAST_NFA: equ STORE_NFA
 
 ; =============================================================================
 ; Test Assertions and Utilities
