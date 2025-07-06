@@ -234,3 +234,37 @@ FROM_R_code:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; R@ ( -- x )
+; Copies the top of the return stack to the data stack.
+; -----------------------------------------------------------------------------
+R_FETCH_NFA:
+    ; Name Field: Length 2, bit 7 set in length ($82), first ('R') and last ('@') characters
+    db $82, $D2, $C0
+
+    ; Link Field: Points to FROM_R_NFA
+    dw FROM_R_NFA
+
+R_FETCH_CFA:
+    dw R_FETCH_code
+
+R_FETCH_code:
+    ; Push the current TOS (DE) onto the data stack memory
+    dec ix
+    ld (ix+0), d
+    dec ix
+    ld (ix+0), e
+    
+    ; Copy the top of the return stack (SP) into TOS (DE) without popping it
+    pop de
+    push de
+    
+    jp NEXT
+
+
+
+
+
+
+
+

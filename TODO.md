@@ -55,7 +55,7 @@ Standard pFORTH dictionary expansion and validation.
 - [x] ?DUP
 - [x] >R
 - [x] R>
-- [ ] R@
+- [x] R@
 
 ### Memory & Register Access
 
