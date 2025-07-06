@@ -71,3 +71,28 @@ STORE_code:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; C@ ( a -- c )
+; Fetches a single byte 'c' from memory address 'a'.
+; -----------------------------------------------------------------------------
+C_FETCH_NFA:
+    ; Name Field: Length 2, bit 7 set in length ($82), first ('C') and last ('@') characters
+    db $82, $C3, $C0
+
+    ; Link Field: Points to STORE_NFA
+    dw STORE_NFA
+
+C_FETCH_CFA:
+    dw C_FETCH_code
+
+C_FETCH_code:
+    ; Read the address from TOS (DE) into HL
+    ld h, d
+    ld l, e
+    
+    ; Load the byte from (HL) into E, and clear D
+    ld e, (hl)
+    ld d, 0
+    
+    jp NEXT
+
