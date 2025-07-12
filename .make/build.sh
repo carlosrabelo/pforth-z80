@@ -25,6 +25,7 @@ FILES=(
     "control.asm"
     "stack.asm"
     "memory.asm"
+    "math.asm"
 )
 
 for file in "${FILES[@]}"; do

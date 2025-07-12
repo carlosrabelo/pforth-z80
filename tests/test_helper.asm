@@ -82,8 +82,9 @@ cold_start_end:
     include "src/control.asm"
     include "src/stack.asm"
     include "src/memory.asm"
+    include "src/math.asm"
 
-LAST_NFA: equ PLUS_STORE_NFA
+LAST_NFA: equ PLUS_NFA
 
 ; =============================================================================
 ; Test Assertions and Utilities
