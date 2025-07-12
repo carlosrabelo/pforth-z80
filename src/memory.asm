@@ -133,3 +133,67 @@ C_STORE_code:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; +! ( n a -- )
+; Adds a 16-bit value 'n' to the 16-bit value at memory address 'a'.
+; -----------------------------------------------------------------------------
+PLUS_STORE_NFA:
+    ; Name Field: Length 2, bit 7 set in length ($82), first ('+') and last ('!') characters
+    db $82, $AB, $A1
+
+    ; Link Field: Points to C_STORE_NFA
+    dw C_STORE_NFA
+
+PLUS_STORE_CFA:
+    dw PLUS_STORE_code
+
+PLUS_STORE_code:
+    ; Read the address from TOS (DE) into HL
+    ld h, d
+    ld l, e
+    
+    ; Load the current value at address 'a' into DE
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
+    dec hl
+    
+    ; Save the address (HL) on the return stack
+    push hl
+    
+    ; Load the operand 'n' from the data stack (IX) into HL
+    ld a, (ix+0)
+    ld l, a
+    ld a, (ix+1)
+    ld h, a
+    
+    ; Add the current value (DE) to 'n' (HL)
+    add hl, de
+    
+    ; Move the sum to DE and restore the address in HL
+    ld d, h
+    ld e, l
+    pop hl
+    
+    ; Store the sum (DE) back at address 'a' (HL)
+    ld (hl), e
+    inc hl
+    ld (hl), d
+    
+    ; Load the new TOS (DE) from the stack (at ix+2)
+    ld a, (ix+2)
+    ld e, a
+    ld a, (ix+3)
+    ld d, a
+    
+    ; Remove 'n' and the new TOS from stack memory (4 bytes)
+    inc ix
+    inc ix
+    inc ix
+    inc ix
+    
+    jp NEXT
+
+
+
+
