@@ -71,3 +71,43 @@ MINUS_code:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; AND ( x1 x2 -- x3 )
+; Performs a bitwise AND on the top two stack values.
+; -----------------------------------------------------------------------------
+AND_NFA:
+    ; Name Field: Length 3, bit 7 set in length ($83), first ('A') and last ('D') characters
+    db $83, $C1, 'N', $C4
+
+    ; Link Field: Points to MINUS_NFA
+    dw MINUS_NFA
+
+AND_CFA:
+    dw AND_code
+
+AND_code:
+    ; Load the operand x1 from data stack memory (IX) into HL
+    ld a, (ix+0)
+    ld l, a
+    ld a, (ix+1)
+    ld h, a
+    
+    ; Perform bitwise AND of HL (x1) and DE (x2)
+    ld a, l
+    and e
+    ld l, a
+    
+    ld a, h
+    and d
+    ld h, a
+    
+    ; Store result back into TOS (DE)
+    ld d, h
+    ld e, l
+    
+    ; Adjust DSP (IX) past x1
+    inc ix
+    inc ix
+    
+    jp NEXT
+
