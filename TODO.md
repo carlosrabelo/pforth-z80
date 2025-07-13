@@ -68,7 +68,7 @@ Standard pFORTH dictionary expansion and validation.
 ### Logic & Math
 
 - [x] +
-- [ ] -
+- [x] -
 - [ ] AND
 - [ ] OR
 - [ ] XOR
