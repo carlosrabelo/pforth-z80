@@ -84,7 +84,7 @@ cold_start_end:
     include "src/memory.asm"
     include "src/math.asm"
 
-LAST_NFA: equ AND_NFA
+LAST_NFA: equ OR_NFA
 
 ; =============================================================================
 ; Test Assertions and Utilities
