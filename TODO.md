@@ -74,7 +74,7 @@ Standard pFORTH dictionary expansion and validation.
 - [x] XOR
 - [x] 0=
 - [x] 0<
-- [ ] U<
+- [x] U<
 - [ ] =
 - [ ] <
 - [ ] >
