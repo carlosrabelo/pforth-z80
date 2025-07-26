@@ -333,3 +333,55 @@ equals_done:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; < ( n1 n2 -- flag )
+; Compares two signed 16-bit values and returns true (-1) if n1 < n2.
+; -----------------------------------------------------------------------------
+LESS_NFA:
+    ; Name Field: Length 1, bit 7 set in length ($81) and character '<' ($BC)
+    db $81, $BC
+
+    ; Link Field: Points to EQUALS_NFA
+    dw EQUALS_NFA
+
+LESS_CFA:
+    dw LESS_code
+
+LESS_code:
+    ; Load the operand n1 from data stack memory (IX) into HL
+    ld a, (ix+0)
+    ld l, a
+    ld a, (ix+1)
+    ld h, a
+    
+    ; Compare HL (n1) and DE (n2) by subtracting DE from HL.
+    or a
+    sbc hl, de
+    
+    ; If overflow occurred, jump to overflow handler
+    jp pe, less_overflow
+    
+    ; No overflow: HL < DE if sign flag is set (negative result)
+    jp m, less_true
+    jr less_false
+    
+less_overflow:
+    ; Overflow occurred: HL < DE if sign flag is clear (positive result)
+    jp p, less_true
+    
+less_false:
+    ; n1 >= n2, return false ($0000)
+    ld de, $0000
+    jr less_done
+    
+less_true:
+    ; n1 < n2, return true ($FFFF)
+    ld de, $FFFF
+    
+less_done:
+    ; Adjust DSP (IX) past n1
+    inc ix
+    inc ix
+    
+    jp NEXT
+
