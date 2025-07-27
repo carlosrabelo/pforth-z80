@@ -385,3 +385,63 @@ less_done:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; > ( n1 n2 -- flag )
+; Compares two signed 16-bit values and returns true (-1) if n1 > n2.
+; -----------------------------------------------------------------------------
+GREATER_NFA:
+    ; Name Field: Length 1, bit 7 set in length ($81) and character '>' ($BE)
+    db $81, $BE
+
+    ; Link Field: Points to LESS_NFA
+    dw LESS_NFA
+
+GREATER_CFA:
+    dw GREATER_code
+
+GREATER_code:
+    ; We want to check if n1 (on stack) > n2 (in DE).
+    ; This is equivalent to checking if n2 < n1.
+    ; So we put n2 (DE) into HL, and load n1 (from stack) into DE.
+    
+    ; HL = n2 (TOS)
+    ld h, d
+    ld l, e
+    
+    ; DE = n1 (stack)
+    ld a, (ix+0)
+    ld e, a
+    ld a, (ix+1)
+    ld d, a
+    
+    ; Compare HL (n2) and DE (n1) by subtracting DE from HL.
+    or a
+    sbc hl, de
+    
+    ; If overflow occurred, jump to overflow handler
+    jp pe, greater_overflow
+    
+    ; No overflow: HL < DE (n2 < n1) if sign flag is set (negative result)
+    jp m, greater_true
+    jr greater_false
+    
+greater_overflow:
+    ; Overflow occurred: HL < DE (n2 < n1) if sign flag is clear (positive result)
+    jp p, greater_true
+    
+greater_false:
+    ; n1 <= n2, return false ($0000)
+    ld de, $0000
+    jr greater_done
+    
+greater_true:
+    ; n1 > n2, return true ($FFFF)
+    ld de, $FFFF
+    
+greater_done:
+    ; Adjust DSP (IX) past n1
+    inc ix
+    inc ix
+    
+    jp NEXT
+
