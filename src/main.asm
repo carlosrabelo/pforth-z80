@@ -89,7 +89,7 @@ cold_start_end:
 ; -----------------------------------------------------------------------------
 ; Dictionary Entry Point configuration
 ; -----------------------------------------------------------------------------
-LAST_NFA: equ GREATER_NFA
+LAST_NFA: equ STAR_NFA
 
 ; -----------------------------------------------------------------------------
 ; End of Assembly-compiled Forth. Next memory is dynamically allocated.
