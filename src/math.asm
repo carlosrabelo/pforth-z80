@@ -504,3 +504,164 @@ star_no_add:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; /MOD ( n1 n2 -- rem quot )
+; Divides n1 by n2, leaving the remainder rem and the quotient quot.
+; Symmetric (truncated) signed division.
+; -----------------------------------------------------------------------------
+SLASH_MOD_NFA:
+    ; Name Field: Length 4, bit 7 set in length ($84), first ('/') and last ('D') characters
+    db $84, $AF, $4D, $4F, $C4
+
+    ; Link Field: Points to STAR_NFA
+    dw STAR_NFA
+
+SLASH_MOD_CFA:
+    dw SLASH_MOD_code
+
+SLASH_MOD_code:
+    ; Load n1 (dividend) from data stack memory (IX) into HL
+    ld a, (ix+0)
+    ld l, a
+    ld a, (ix+1)
+    ld h, a
+    
+    ; TOS DE is n2 (divisor)
+    
+    ; Initialize sign flags variable
+    xor a
+    ld (div_flags), a
+    
+    ; Test n1 sign
+    bit 7, h
+    jr z, slash_mod_n1_pos
+    
+    ; n1 is negative
+    ; Set bit 0 (quotient sign) and bit 1 (remainder sign) to 1 (value 3)
+    ld a, 3
+    ld (div_flags), a
+    
+    ; Negate HL to get |n1|
+    ld a, l
+    cpl
+    ld l, a
+    ld a, h
+    cpl
+    ld h, a
+    inc hl
+    
+slash_mod_n1_pos:
+    ; Test n2 sign
+    bit 7, d
+    jr z, slash_mod_n2_pos
+    
+    ; n2 is negative
+    ; XOR bit 0 of div_flags
+    ld a, (div_flags)
+    xor 1
+    ld (div_flags), a
+    
+    ; Negate DE to get |n2|
+    ld a, e
+    cpl
+    ld e, a
+    ld a, d
+    cpl
+    ld d, a
+    inc de
+    
+slash_mod_n2_pos:
+    ; Save Instruction Pointer (BC) on return stack (native stack SP)
+    push bc
+    
+    ; Run unsigned 16-bit division: HL / DE -> HL = quotient, BC = remainder
+    ld bc, 0
+    ld a, 16
+    
+slash_mod_div_loop:
+    ; Save loop counter A on native stack
+    push af
+    
+    add hl, hl
+    rl c
+    rl b
+    
+    ; Try BC - DE
+    push bc
+    ld a, c
+    sub e
+    ld c, a
+    ld a, b
+    sbc a, d
+    ld b, a
+    
+    jr c, slash_mod_div_restore
+    
+    ; Subtraction successful
+    pop af ; Clean up saved BC
+    inc l
+    jr slash_mod_div_next
+    
+slash_mod_div_restore:
+    pop bc
+    
+slash_mod_div_next:
+    ; Restore loop counter A from native stack
+    pop af
+    dec a
+    jr nz, slash_mod_div_loop
+    
+    ; Now quotient is in HL, remainder is in BC.
+    ; Apply signs.
+    
+    ; Get flags in A and save AF to stack
+    ld a, (div_flags)
+    push af
+    
+    ; 1. Remainder sign (bit 1 of div_flags)
+    bit 1, a
+    jr z, slash_mod_rem_sign_done
+    
+    ; Negate remainder BC
+    ld a, c
+    cpl
+    ld c, a
+    ld a, b
+    cpl
+    ld b, a
+    inc bc
+    
+slash_mod_rem_sign_done:
+    ; Store remainder (BC) back to data stack memory (IX)
+    ld a, c
+    ld (ix+0), a
+    ld a, b
+    ld (ix+1), a
+    
+    ; 2. Quotient sign (bit 0 of div_flags)
+    pop af ; Restore div_flags into A
+    bit 0, a
+    jr z, slash_mod_quot_sign_done
+    
+    ; Negate quotient HL
+    ld a, l
+    cpl
+    ld l, a
+    ld a, h
+    cpl
+    ld h, a
+    inc hl
+    
+slash_mod_quot_sign_done:
+    ; Restore Instruction Pointer (BC) from return stack
+    pop bc
+    
+    ; Set TOS (DE) to quotient (HL)
+    ld d, h
+    ld e, l
+    
+    jp NEXT
+
+div_flags:
+    db 0
+
