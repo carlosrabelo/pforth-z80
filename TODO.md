@@ -80,7 +80,7 @@ Standard pFORTH dictionary expansion and validation.
 - [x] >
 - [x] *
 - [x] /MOD
-- [ ] /
+- [x] /
 - [ ] MOD
 
 ### Compiler & Variables
