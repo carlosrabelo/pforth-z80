@@ -686,3 +686,36 @@ SLASH_code:
     dw DROP_CFA
     dw SEMI_CFA
 
+; -----------------------------------------------------------------------------
+; MOD ( n1 n2 -- rem )
+; Divides n1 by n2, leaving the remainder rem.
+; Implemented as: /MOD DROP
+; -----------------------------------------------------------------------------
+MOD_NFA:
+    ; Name Field: Length 3, bit 7 set in length ($83), first ('M') and last ('D') characters
+    db $83, $CD, $4F, $C4
+
+    ; Link Field: Points to SLASH_NFA
+    dw SLASH_NFA
+
+MOD_CFA:
+    dw DOCOL
+
+MOD_code:
+    dw SLASH_MOD_CFA
+    dw DROP_CFA
+    dw SEMI_CFA
+
+
+
+
+
+
+
+
+
+
+
+
+
+
