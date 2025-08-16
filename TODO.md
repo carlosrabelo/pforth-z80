@@ -90,7 +90,7 @@ Standard pFORTH dictionary expansion and validation.
 - [x] ALLOT
 - [x] C,
 - [x] CONSTANT
-- [ ] VARIABLE
+- [x] VARIABLE
 - [ ] [COMPILE]
 - [ ] COMPILE
 - [ ] LITERAL

@@ -1220,3 +1220,50 @@ DOCON:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
+
+; VARIABLE ( -- )
+; Creates a variable with the given name, allocating 2 bytes initialized to 0.
+; -----------------------------------------------------------------------------
+VARIABLE_NFA:
+    ; Name Field: Length 8, bit 7 set in length ($88), first ('V') and last ('E') characters
+    ; V = $56 -> $D6, E = $45 -> $C5
+    db $88, $D6, 'A', 'R', 'I', 'A', 'B', 'L', $C5
+
+    ; Link Field: Points to CONSTANT_NFA
+    dw CONSTANT_NFA
+
+VARIABLE_CFA:
+    dw VARIABLE_code
+
+VARIABLE_code:
+    push bc                     ; Save Forth IP (BC)
+    call HEADER_internal
+    
+    ; Write CFA (pointing to DOVAR / CREATE_execution behavior)
+    ld a, CREATE_execution & $FF
+    ld (hl), a
+    inc hl
+    ld a, (CREATE_execution >> 8) & $FF
+    ld (hl), a
+    inc hl                      ; HL now points to PFA (DP + L + 5)
+    
+    ; Initialize variable PFA value with 0 (2 bytes)
+    xor a
+    ld (hl), a
+    inc hl
+    ld (hl), a
+    inc hl                      ; HL now points to DP + L + 7 (next free location)
+    
+    ; Update U_DP to point to next free location
+    ld (USER_AREA_START + U_DP), hl
+    
+    ; Update U_CURRENT and U_CONTEXT with NEW_WORD_ADDR (saved on stack by helper)
+    pop hl                      ; HL = NEW_WORD_ADDR
+    ld (USER_AREA_START + U_CURRENT), hl
+    ld (USER_AREA_START + U_CONTEXT), hl
+    
+    pop bc                      ; Restore Forth IP
+    jp NEXT
+
+; Define DOVAR alias for CREATE_execution
+DOVAR: equ CREATE_execution
