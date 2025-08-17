@@ -1317,3 +1317,43 @@ bracket_compile_err:
     jp INTERPRET_error          ; Print error message and abort
 
 ; -----------------------------------------------------------------------------
+
+; COMPILE ( -- )
+; Compiles the next CFA in the instruction stream into the current definition.
+; -----------------------------------------------------------------------------
+COMPILE_NFA:
+    ; Name Field: Length 7, bit 7 set in length ($87), first ('C') and last ('E') characters
+    ; C = $43 -> $C3, E = $45 -> $C5
+    db $87, $C3, 'O', 'M', 'P', 'I', 'L', $C5
+
+    ; Link Field: Points to BRACKET_COMPILE_NFA
+    dw BRACKET_COMPILE_NFA
+
+COMPILE_CFA:
+    dw COMPILE_code
+
+COMPILE_code:
+    ; 1. Load the CFA of the target word from current IP (BC) into HL
+    ld a, (bc)
+    ld l, a
+    inc bc
+    ld a, (bc)
+    ld h, a
+    inc bc                      ; BC (IP) is advanced past the compiled CFA
+    
+    ; Now HL contains the CFA of the word to be compiled.
+    ; 2. Write HL to the dictionary at U_DP
+    ld de, (USER_AREA_START + U_DP)
+    ld a, l
+    ld (de), a
+    inc de
+    ld a, h
+    ld (de), a
+    inc de
+    
+    ; 3. Update U_DP to the new address
+    ld (USER_AREA_START + U_DP), de
+    
+    jp NEXT
+
+; -----------------------------------------------------------------------------

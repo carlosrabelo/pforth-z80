@@ -14,7 +14,7 @@ DUP_NFA:
     db $83, $C4, 'U', $D0
 
     ; Link Field: Points to previous word's NFA (LEAVE_NFA)
-    dw BRACKET_COMPILE_NFA
+    dw COMPILE_NFA
 
 DUP_CFA:
     dw DUP_code
