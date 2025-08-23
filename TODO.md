@@ -93,7 +93,7 @@ Standard pFORTH dictionary expansion and validation.
 - [x] VARIABLE
 - [x] [COMPILE]
 - [x] COMPILE
-- [ ] LITERAL
+- [x] LITERAL
 
 ### Control Flow
 
