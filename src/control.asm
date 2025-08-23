@@ -1404,3 +1404,138 @@ LITERAL_code:
     
     jp NEXT
 
+; =============================================================================
+; Control Flow - Run-time Branching Helpers (Internal Primitives)
+; =============================================================================
+
+; -----------------------------------------------------------------------------
+; BRANCH ( -- )
+; Unconditional branch. Reads the next absolute target address from the
+; instruction stream and sets the IP (BC) to it.
+; -----------------------------------------------------------------------------
+BRANCH_NFA:
+    ; Name Field: Length 6, bit 7 set in length ($86), first ('B') and last ('H') characters
+    ; B = $42 -> $C2, H = $48 -> $C8
+    db $86, $C2, 'R', 'A', 'N', 'C', $C8
+
+    ; Link Field: Points to LITERAL_NFA
+    dw LITERAL_NFA
+
+BRANCH_CFA:
+    dw BRANCH_code
+
+BRANCH_code:
+    ; Read absolute address from current IP (BC) into HL
+    ld a, (bc)
+    ld l, a
+    inc bc
+    ld a, (bc)
+    ld h, a
+    
+    ; Set IP (BC) to new target address (HL)
+    ld b, h
+    ld c, l
+    
+    jp NEXT
+
+; -----------------------------------------------------------------------------
+; 0BRANCH ( flag -- )
+; Conditional branch. If flag is 0, branches to the absolute address in the
+; instruction stream. Otherwise, skips the target address.
+; -----------------------------------------------------------------------------
+ZERO_BRANCH_NFA:
+    ; Name Field: Length 7, bit 7 set in length ($87), first ('0') and last ('H') characters
+    ; 0 = $30 -> $B0, H = $48 -> $C8
+    db $87, $B0, 'B', 'R', 'A', 'N', 'C', $C8
+
+    ; Link Field: Points to BRANCH_NFA
+    dw BRANCH_NFA
+
+ZERO_BRANCH_CFA:
+    dw ZERO_BRANCH_code
+
+ZERO_BRANCH_code:
+    ; Check if TOS (DE) is zero
+    ld a, d
+    or e
+    jr z, zero_branch_take
+    
+    ; TOS is not zero: skip branch address (advance BC by 2)
+    inc bc
+    inc bc
+    jr zero_branch_done
+    
+zero_branch_take:
+    ; TOS is zero: branch! Read absolute address from (BC) into BC
+    ld a, (bc)
+    ld l, a
+    inc bc
+    ld a, (bc)
+    ld h, a
+    ld b, h
+    ld c, l
+    
+zero_branch_done:
+    ; Pop new TOS (DE) from data stack memory (IX)
+    ld e, (ix+0)
+    ld d, (ix+1)
+    inc ix
+    inc ix
+    
+    jp NEXT
+
+; =============================================================================
+; Control Flow - Compile-time Words (IMMEDIATE)
+; =============================================================================
+
+; -----------------------------------------------------------------------------
+; IF ( -- orig )
+; Compiles 0BRANCH and leaves HERE on stack to resolve branch target.
+; This is an IMMEDIATE word.
+; -----------------------------------------------------------------------------
+IF_NFA:
+    ; Name Field: Length 2, bit 7 and bit 6 set (IMMEDIATE) = $C2.
+    ; I = $49 -> $C9, F = $46 -> $C6
+    db $C2, $C9, $C6
+
+    ; Link Field: Points to ZERO_BRANCH_NFA
+    dw ZERO_BRANCH_NFA
+
+IF_CFA:
+    dw IF_code
+
+IF_code:
+    ; 1. Compile ZERO_BRANCH_CFA
+    ld hl, (USER_AREA_START + U_DP)
+    ld a, ZERO_BRANCH_CFA & $FF
+    ld (hl), a
+    inc hl
+    ld a, (ZERO_BRANCH_CFA >> 8) & $FF
+    ld (hl), a
+    inc hl
+    
+    ; 2. Push current DP (HL) onto the data stack (IX)
+    dec ix
+    ld a, d
+    ld (ix+0), a
+    dec ix
+    ld a, e
+    ld (ix+0), a
+    
+    ; Load HL (current DP) into DE (TOS)
+    ld d, h
+    ld e, l
+    
+    ; 3. Compile dummy target address 0 (2 bytes)
+    xor a
+    ld (hl), a
+    inc hl
+    ld (hl), a
+    inc hl
+    
+    ; 4. Update U_DP
+    ld (USER_AREA_START + U_DP), hl
+    
+    jp NEXT
+
+; -----------------------------------------------------------------------------
