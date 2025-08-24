@@ -1675,3 +1675,51 @@ BEGIN_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
+
+; UNTIL ( dest -- )
+; Compiles a ZERO_BRANCH followed by the absolute destination address.
+; This is an IMMEDIATE word.
+; -----------------------------------------------------------------------------
+UNTIL_NFA:
+    ; Name Field: Length 5, bit 7 and bit 6 set (IMMEDIATE) = $C5.
+    ; U = $55 -> $D5, L = $4C -> $CC
+    db $C5, $D5, 'N', 'T', 'I', $CC
+
+    ; Link Field: Points to BEGIN_NFA
+    dw BEGIN_NFA
+
+UNTIL_CFA:
+    dw UNTIL_code
+
+UNTIL_code:
+    ; Load current DP into HL
+    ld hl, (USER_AREA_START + U_DP)
+    
+    ; 1. Compile ZERO_BRANCH_CFA
+    ld a, ZERO_BRANCH_CFA & $FF
+    ld (hl), a
+    inc hl
+    ld a, (ZERO_BRANCH_CFA >> 8) & $FF
+    ld (hl), a
+    inc hl                      ; HL points to the target cell in compilation
+    
+    ; 2. Compile dest (TOS DE) into the target cell
+    ld a, e
+    ld (hl), a
+    inc hl
+    ld a, d
+    ld (hl), a
+    inc hl                      ; HL now points to next free cell
+    
+    ; 3. Update U_DP
+    ld (USER_AREA_START + U_DP), hl
+    
+    ; 4. Pop new TOS (DE) from data stack memory (IX)
+    ld e, (ix+0)
+    ld d, (ix+1)
+    inc ix
+    inc ix
+    
+    jp NEXT
+
+; -----------------------------------------------------------------------------
