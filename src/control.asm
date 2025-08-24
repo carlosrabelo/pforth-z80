@@ -1642,3 +1642,36 @@ THEN_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
+
+; BEGIN ( -- dest )
+; Leaves the current dictionary pointer (HERE) on the stack as a loop destination.
+; This is an IMMEDIATE word.
+; -----------------------------------------------------------------------------
+BEGIN_NFA:
+    ; Name Field: Length 5, bit 7 and bit 6 set (IMMEDIATE) = $C5.
+    ; B = $42 -> $C2, N = $4E -> $CE
+    db $C5, $C2, 'E', 'G', 'I', $CE
+
+    ; Link Field: Points to THEN_NFA
+    dw THEN_NFA
+
+BEGIN_CFA:
+    dw BEGIN_code
+
+BEGIN_code:
+    ; Load current DP (HERE) into HL
+    ld hl, (USER_AREA_START + U_DP)
+    
+    ; Push current TOS (DE) onto the data stack (IX)
+    dec ix
+    ld (ix+0), d
+    dec ix
+    ld (ix+0), e
+    
+    ; Set new TOS (DE) to HERE (HL)
+    ld d, h
+    ld e, l
+    
+    jp NEXT
+
+; -----------------------------------------------------------------------------
