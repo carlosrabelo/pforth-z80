@@ -1605,3 +1605,40 @@ ELSE_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
+
+; THEN ( orig -- )
+; Resolves the branch target at orig to the current HERE.
+; This is an IMMEDIATE word.
+; -----------------------------------------------------------------------------
+THEN_NFA:
+    ; Name Field: Length 4, bit 7 and bit 6 set (IMMEDIATE) = $C4.
+    ; T = $54 -> $D4, N = $4E -> $CE
+    db $C4, $D4, 'H', 'E', $CE
+
+    ; Link Field: Points to ELSE_NFA
+    dw ELSE_NFA
+
+THEN_CFA:
+    dw THEN_code
+
+THEN_code:
+    ; Load current DP (HERE) into HL
+    ld hl, (USER_AREA_START + U_DP)
+    
+    ; TOS DE contains the offset target address.
+    ; Write HL (HERE) to the address in DE
+    ld a, l
+    ld (de), a
+    inc de
+    ld a, h
+    ld (de), a
+    
+    ; Pop new TOS (DE) from data stack memory (IX)
+    ld e, (ix+0)
+    ld d, (ix+1)
+    inc ix
+    inc ix
+    
+    jp NEXT
+
+; -----------------------------------------------------------------------------
