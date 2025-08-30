@@ -1723,3 +1723,54 @@ UNTIL_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
+
+; WHILE ( dest -- dest orig )
+; Compiles a ZERO_BRANCH with a dummy target cell, leaving the target address cell
+; on the stack above the BEGIN destination.
+; This is an IMMEDIATE word.
+; -----------------------------------------------------------------------------
+WHILE_NFA:
+    ; Name Field: Length 5, bit 7 and bit 6 set (IMMEDIATE) = $C5.
+    ; W = $57 -> $D7, E = $45 -> $C5
+    db $C5, $D7, 'H', 'I', 'L', $C5
+
+    ; Link Field: Points to UNTIL_NFA
+    dw UNTIL_NFA
+
+WHILE_CFA:
+    dw WHILE_code
+
+WHILE_code:
+    ; 1. Compile ZERO_BRANCH_CFA
+    ld hl, (USER_AREA_START + U_DP)
+    ld a, ZERO_BRANCH_CFA & $FF
+    ld (hl), a
+    inc hl
+    ld a, (ZERO_BRANCH_CFA >> 8) & $FF
+    ld (hl), a
+    inc hl                      ; HL points to dummy target cell (orig)
+    
+    ; 2. Push dest (TOS DE) onto data stack (IX)
+    dec ix
+    ld a, d
+    ld (ix+0), a
+    dec ix
+    ld (ix+0), e
+    
+    ; 3. Set new TOS (DE) to orig (HL)
+    ld d, h
+    ld e, l
+    
+    ; 4. Compile dummy target address 0 (2 bytes)
+    xor a
+    ld (hl), a
+    inc hl
+    ld (hl), a
+    inc hl                      ; HL points to next free cell
+    
+    ; 5. Update U_DP
+    ld (USER_AREA_START + U_DP), hl
+    
+    jp NEXT
+
+; -----------------------------------------------------------------------------
