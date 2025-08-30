@@ -1774,3 +1774,58 @@ WHILE_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
+
+; REPEAT ( dest orig -- )
+; Compiles an unconditional BRANCH back to dest, resolves orig to the current HERE,
+; and cleans the stack.
+; This is an IMMEDIATE word.
+; -----------------------------------------------------------------------------
+REPEAT_NFA:
+    ; Name Field: Length 6, bit 7 and bit 6 set (IMMEDIATE) = $C6.
+    ; R = $52 -> $D2, T = $54 -> $D4
+    db $C6, $D2, 'E', 'P', 'E', 'A', $D4
+
+    ; Link Field: Points to WHILE_NFA
+    dw WHILE_NFA
+
+REPEAT_CFA:
+    dw REPEAT_code
+
+REPEAT_code:
+    ; 1. Compile BRANCH_CFA
+    ld hl, (USER_AREA_START + U_DP)
+    ld a, BRANCH_CFA & $FF
+    ld (hl), a
+    inc hl
+    ld a, (BRANCH_CFA >> 8) & $FF
+    ld (hl), a
+    inc hl                      ; HL points to target cell of BRANCH
+    
+    ; 2. Compile dest (which is at the top of IX stack)
+    ld a, (ix+0)                ; low byte of dest
+    ld (hl), a
+    inc hl
+    ld a, (ix+1)                ; high byte of dest
+    ld (hl), a
+    inc hl                      ; HL now points to addr_after_REPEAT
+    
+    ; Update U_DP
+    ld (USER_AREA_START + U_DP), hl
+    
+    ; 3. Resolve orig (TOS DE) with addr_after_REPEAT (HL)
+    ld a, l
+    ld (de), a
+    inc de
+    ld a, h
+    ld (de), a
+    
+    ; 4. Pop dest and the new TOS from data stack memory (IX)
+    ld e, (ix+2)
+    ld d, (ix+3)
+    inc ix
+    inc ix
+    inc ix
+    inc ix                      ; remove 4 bytes (dest and old TOS)
+    
+    jp NEXT
+

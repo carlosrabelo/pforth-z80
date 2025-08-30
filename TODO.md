@@ -103,7 +103,7 @@ Standard pFORTH dictionary expansion and validation.
 - [x] BEGIN
 - [x] UNTIL
 - [x] WHILE
-- [ ] REPEAT
+- [x] REPEAT
 - [ ] DO
 - [ ] LOOP
 - [ ] +LOOP
