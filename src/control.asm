@@ -1829,3 +1829,180 @@ REPEAT_code:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; (DO) ( limit start -- )
+; Runtime routine for DO. Pops limit and start from data stack, and pushes them
+; onto the return stack (SP).
+; -----------------------------------------------------------------------------
+DO_RUN_NFA:
+    ; Name Field: Length 4, bit 7 set in first and last characters ($84)
+    ; '(' = $28 -> $A8, ')' = $29 -> $A9
+    db $84, $A8, 'D', 'O', $A9
+
+    ; Link Field: Points to REPEAT_NFA
+    dw REPEAT_NFA
+
+DO_RUN_CFA:
+    dw DO_code
+
+DO_code:
+    ; Copy IX (DSP) to HL
+    push ix
+    pop hl
+    
+    ; Save start/index (TOS DE) to IY
+    push de
+    pop iy
+    
+    ; Read limit (2 bytes) from (HL) into DE
+    ld a, (hl)
+    ld e, a
+    inc hl
+    ld a, (hl)
+    ld d, a
+    
+    ; Copy limit (DE) to HL
+    ld h, d
+    ld l, e
+    
+    ; Restore start/index (IY) to DE
+    push iy
+    pop de
+    
+    ; Increment data stack pointer IX by 2 (limit consumed)
+    inc ix
+    inc ix
+    
+    ; Push limit (HL) to Return Stack (SP)
+    push hl
+    
+    ; Push index (DE) to Return Stack (SP)
+    push de
+    
+    ; Pop new TOS (DE) from data stack memory (IX) using standard 8-bit loads
+    ld a, (ix+0)
+    ld e, a
+    ld a, (ix+1)
+    ld d, a
+    inc ix
+    inc ix
+    
+    jp NEXT
+
+; -----------------------------------------------------------------------------
+; (LOOP) ( -- )
+; Runtime routine for LOOP. Increments index, compares with limit, and branches
+; back if index != limit. Otherwise, discards loop parameters and exits loop.
+; -----------------------------------------------------------------------------
+LOOP_RUN_NFA:
+    ; Name Field: Length 6, bit 7 set in first and last characters ($86)
+    ; '(' = $28 -> $A8, ')' = $29 -> $A9
+    db $86, $A8, 'L', 'O', 'O', 'P', $A9
+
+    ; Link Field: Points to DO_RUN_NFA
+    dw DO_RUN_NFA
+
+LOOP_RUN_CFA:
+    dw LOOP_code
+
+LOOP_SAVED_TOS: dw 0
+
+LOOP_code:
+    ; Save TOS (DE) to exclusive RAM variable using standard HL instructions
+    ld h, d
+    ld l, e
+    ld (LOOP_SAVED_TOS), hl
+    
+    ; Pop current index from return stack (SP) into HL
+    pop hl
+    
+    ; Pop limit from return stack (SP) into DE
+    pop de
+    
+    ; Increment index
+    inc hl
+    
+    ; Push limit and index back to the return stack (in case loop continues)
+    push de
+    push hl
+    
+    ; Compare index (HL) with limit (DE)
+    or a
+    sbc hl, de
+    
+    jr z, loop_terminate_static
+    
+    ; Loop continues: return stack is already updated with limit and index
+    ; Restore TOS (DE) using standard HL instructions
+    ld hl, (LOOP_SAVED_TOS)
+    ld d, h
+    ld e, l
+    
+    ; Branch back: read target address from BC into BC
+    ld a, (bc)
+    ld l, a
+    inc bc
+    ld a, (bc)
+    ld h, a
+    ld b, h
+    ld c, l
+    
+    jp NEXT
+
+loop_terminate_static:
+    ; Loop terminates: clean up the return stack (remove limit and index pushed earlier)
+    pop hl
+    pop hl
+    
+    ; Restore TOS (DE) using standard HL instructions
+    ld hl, (LOOP_SAVED_TOS)
+    ld d, h
+    ld e, l
+    
+    ; Skip branch target address (2 bytes)
+    inc bc
+    inc bc
+    
+    jp NEXT
+
+; -----------------------------------------------------------------------------
+; DO ( limit start -- )
+; Compiles (DO) and leaves loop destination address on stack.
+; This is an IMMEDIATE word.
+; -----------------------------------------------------------------------------
+DO_NFA:
+    ; Name Field: Length 2, bit 7 and bit 6 set (IMMEDIATE) = $C2.
+    ; D = $44 -> $C4, O = $4F -> $CF
+    db $C2, $C4, $CF
+
+    ; Link Field: Points to LOOP_RUN_NFA
+    dw LOOP_RUN_NFA
+
+DO_CFA:
+    dw DO_compiler_code
+
+DO_compiler_code:
+    ; 1. Compile DO_RUN_CFA
+    ld hl, (USER_AREA_START + U_DP)
+    ld a, DO_RUN_CFA & $FF
+    ld (hl), a
+    inc hl
+    ld a, (DO_RUN_CFA >> 8) & $FF
+    ld (hl), a
+    inc hl                      ; HL points to next free cell (loop body start)
+    
+    ; 2. Push HERE (HL) onto data stack (IX)
+    dec ix
+    ld a, d
+    ld (ix+0), a
+    dec ix
+    ld (ix+0), e
+    
+    ; 3. Set new TOS (DE) to HERE (HL)
+    ld d, h
+    ld e, l
+    
+    ; 4. Update U_DP
+    ld (USER_AREA_START + U_DP), hl
+    
+    jp NEXT
