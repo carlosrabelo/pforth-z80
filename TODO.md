@@ -107,7 +107,7 @@ Standard pFORTH dictionary expansion and validation.
 - [x] DO
 - [x] LOOP
 - [x] +LOOP
-- [ ] I
+- [x] I
 - [ ] LEAVE
 
 ### Formatting & TTY

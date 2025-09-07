@@ -2232,3 +2232,36 @@ PLUS_LOOP_compiler_code:
 
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; I ( -- n )
+; Copies the index of the innermost loop onto the data stack.
+; -----------------------------------------------------------------------------
+I_NFA:
+    ; Name Field: Length 1, bit 7 set in first and last characters ($81)
+    ; 'I' = $49 -> $C9
+    db $81, $C9
+
+    ; Link Field: Points to PLUS_LOOP_NFA
+    dw PLUS_LOOP_NFA
+
+I_CFA:
+    dw I_code
+
+I_code:
+    ; 1. Pop current index from Return Stack (SP) into HL
+    pop hl
+    ; 2. Push it back immediately to preserve Return Stack
+    push hl
+
+    ; 3. Push current TOS (DE) onto the data stack (IX)
+    dec ix
+    ld (ix+0), d
+    dec ix
+    ld (ix+0), e
+
+    ; 4. Load index (HL) into TOS (DE)
+    ld d, h
+    ld e, l
+
+    jp NEXT
+
