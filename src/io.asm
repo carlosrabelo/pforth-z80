@@ -67,6 +67,32 @@ EMIT_code:
 
 
 ; -----------------------------------------------------------------------------
+; CR ( -- )
+; Outputs a Carriage Return ($0D) and a Line Feed ($0A) to port 1.
+; -----------------------------------------------------------------------------
+CR_NFA:
+    ; Name Field: Length 2, bit 7 set in first ('C') and last ('R') characters ($82)
+    ; 'C' = $43 -> $C3, 'R' = $52 -> $D2
+    db $82, $C3, $D2
+
+    ; Link Field: Points to EMIT_NFA
+    dw EMIT_NFA
+
+CR_CFA:
+    dw CR_code
+
+CR_code:
+    ; 1. Emit Carriage Return ($0D)
+    ld a, $0D
+    call EMIT_char
+    
+    ; 2. Emit Line Feed ($0A)
+    ld a, $0A
+    call EMIT_char
+    
+    jp NEXT
+
+; -----------------------------------------------------------------------------
 ; WORD ( char -- addr )
 ; -----------------------------------------------------------------------------
 ; Parses the next token from the terminal input buffer (TIB) delimited by char.
@@ -79,7 +105,7 @@ WORD_NFA:
 
     ; Link Field: Points to BYE_NFA
 WORD_LFA:
-    dw EMIT_NFA
+    dw CR_NFA
 
     ; Code Field: Points to the code execution entry
 WORD_CFA:
