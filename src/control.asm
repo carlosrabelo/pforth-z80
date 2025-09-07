@@ -2052,4 +2052,183 @@ LOOP_compiler_code:
     
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; (+LOOP) ( -- )
+; Runtime routine for +LOOP. Consumes increment from stack, adds to index,
+; compares index with limit using boundary crossing logic, and branches
+; back if the loop should continue.
+; -----------------------------------------------------------------------------
+PLUS_LOOP_RUN_NFA:
+    ; Name Field: Length 7, bit 7 set in first and last characters ($87)
+    ; '(' = $28 -> $A8, ')' = $29 -> $A9
+    db $87, $A8, $2B, $4C, $4F, $4F, $50, $A9
+
+    ; Link Field: Points to LOOP_NFA
+    dw LOOP_NFA
+
+PLUS_LOOP_RUN_CFA:
+    dw PLUS_LOOP_code
+
+PLUS_LOOP_INDEX_OLD: dw 0
+PLUS_LOOP_INDEX_NEW: dw 0
+PLUS_LOOP_LIMIT:     dw 0
+PLUS_LOOP_STEP:      dw 0
+PLUS_LOOP_SAVED_TOS: dw 0
+PLUS_LOOP_TEMP:      db 0
+
+PLUS_LOOP_code:
+
+    ; 1. Save step 'n' (DE) to PLUS_LOOP_STEP
+    ld h, d
+    ld l, e
+    ld (PLUS_LOOP_STEP), hl
+
+    ; 2. Pop new TOS (DE) from data stack memory (IX) safely using standard 8-bit loads
+    ld a, (ix+0)
+    ld e, a
+    ld a, (ix+1)
+    ld d, a
+    inc ix
+    inc ix
+
+    ; Save new TOS (DE) to PLUS_LOOP_SAVED_TOS
+    ld h, d
+    ld l, e
+    ld (PLUS_LOOP_SAVED_TOS), hl
+
+    ; 3. Pop index_old and limit from return stack (SP)
+    pop hl
+    ld (PLUS_LOOP_INDEX_OLD), hl
+    pop hl
+    ld (PLUS_LOOP_LIMIT), hl
+
+    ; 4. Calculate index_new = index_old + n
+    ld hl, (PLUS_LOOP_STEP)
+    ld d, h
+    ld e, l                   ; DE = n
+    ld hl, (PLUS_LOOP_INDEX_OLD)
+    add hl, de                ; HL = index_new
+    ld (PLUS_LOOP_INDEX_NEW), hl
+
+    ; 5. Calculate D_old = index_old - limit - $8000
+    ld hl, (PLUS_LOOP_LIMIT)
+    ld d, h
+    ld e, l                   ; DE = limit
+    ld hl, (PLUS_LOOP_INDEX_OLD)
+    or a
+    sbc hl, de                ; HL = index_old - limit
+    ld a, h
+    xor $80
+    ld (PLUS_LOOP_TEMP), a    ; Save D_old_high in PLUS_LOOP_TEMP
+
+    ; 6. Calculate D_new = index_new - limit - $8000
+    ld hl, (PLUS_LOOP_LIMIT)
+    ld d, h
+    ld e, l                   ; DE = limit
+    ld hl, (PLUS_LOOP_INDEX_NEW)
+    or a
+    sbc hl, de                ; HL = index_new - limit
+    ld a, h
+    xor $80
+    ld h, a                   ; H = D_new_high
+
+    ; 7. Apply boundary crossing formula (overflow check)
+    ; Overflow = ((D_old_high ^ D_new_high) & (n_high ^ D_new_high) & $80) != 0
+    ld a, (PLUS_LOOP_STEP + 1)
+    ld d, a                   ; D = n_high
+    
+    ld a, (PLUS_LOOP_TEMP)    ; A = D_old_high
+    xor h                     ; A = D_old_high ^ D_new_high
+    ld (PLUS_LOOP_TEMP), a    ; Save (D_old_high ^ D_new_high) in PLUS_LOOP_TEMP
+    
+    ld a, d                   ; A = n_high
+    xor h                     ; A = n_high ^ D_new_high
+    
+    ld hl, PLUS_LOOP_TEMP
+    and (hl)                  ; A = (n_high ^ D_new_high) & (D_old_high ^ D_new_high)
+    and $80
+    
+    jp nz, plus_loop_terminate
+
+plus_loop_continue:
+
+    ; Recalcular/empilhar limit e index_new na pilha de retorno
+    ld hl, (PLUS_LOOP_LIMIT)
+    push hl
+    ld hl, (PLUS_LOOP_INDEX_NEW)
+    push hl
+
+    ; Restore TOS (DE)
+    ld hl, (PLUS_LOOP_SAVED_TOS)
+    ld d, h
+    ld e, l
+
+    ; Branch back: read target address from BC into BC
+    ld a, (bc)
+    ld l, a
+    inc bc
+    ld a, (bc)
+    ld h, a
+    ld b, h
+    ld c, l
+
+    jp NEXT
+
+plus_loop_terminate:
+
+    ; Restore TOS (DE)
+    ld hl, (PLUS_LOOP_SAVED_TOS)
+    ld d, h
+    ld e, l
+
+    ; Terminate: skip branch target address (2 bytes)
+    inc bc
+    inc bc
+
+    jp NEXT
+
+; -----------------------------------------------------------------------------
+; +LOOP ( -- )
+; Compiles (+LOOP) and destination address.
+; This is an IMMEDIATE word.
+; -----------------------------------------------------------------------------
+PLUS_LOOP_NFA:
+    ; Name Field: Length 5, bit 7 and bit 6 set (IMMEDIATE) = $C5
+    ; '+' = $2B -> $AB
+    db $C5, $AB, $4C, $4F, $4F, $D0
+
+    ; Link Field: Points to PLUS_LOOP_RUN_NFA
+    dw PLUS_LOOP_RUN_NFA
+
+PLUS_LOOP_CFA:
+    dw PLUS_LOOP_compiler_code
+
+PLUS_LOOP_compiler_code:
+    ; 1. Compile PLUS_LOOP_RUN_CFA
+    ld hl, (USER_AREA_START + U_DP)
+    ld a, PLUS_LOOP_RUN_CFA & $FF
+    ld (hl), a
+    inc hl
+    ld a, (PLUS_LOOP_RUN_CFA >> 8) & $FF
+    ld (hl), a
+    inc hl                      ; HL points to target cell
+
+    ; 2. Compile dest (TOS DE) into target cell
+    ld a, e
+    ld (hl), a
+    inc hl
+    ld a, d
+    ld (hl), a
+    inc hl                      ; HL points to next free cell
+
+    ; Update U_DP
+    ld (USER_AREA_START + U_DP), hl
+
+    ; 3. Pop new TOS (DE) from data stack memory (IX)
+    ld e, (ix+0)
+    ld d, (ix+1)
+    inc ix
+    inc ix
+
+    jp NEXT
 
