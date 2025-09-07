@@ -2265,3 +2265,36 @@ I_code:
 
     jp NEXT
 
+; -----------------------------------------------------------------------------
+; LEAVE ( -- )
+; Forces the termination of the innermost DO LOOP by setting the index to limit.
+; -----------------------------------------------------------------------------
+LEAVE_NFA:
+    ; Name Field: Length 5, bit 7 set in first and last characters ($85)
+    ; 'L' = $4C -> $CC, 'E' = $45 -> $C5
+    db $85, $CC, 'E', 'A', 'V', $C5
+
+    ; Link Field: Points to I_NFA
+    dw I_NFA
+
+LEAVE_CFA:
+    dw LEAVE_code
+
+LEAVE_code:
+    ; 1. Load limit address from Return Stack (SP + 2) into HL
+    ld hl, 2
+    add hl, sp
+    
+    ; 2. Read limit (16-bit) into HL
+    ld a, (hl)
+    inc hl
+    ld h, (hl)
+    ld l, a
+    
+    ; Decrement limit to get limit - 1
+    dec hl
+    
+    ; 3. Overwrite loop index on top of Return Stack (SP) with limit - 1 (HL)
+    ex (sp), hl
+
+    jp NEXT
