@@ -226,6 +226,129 @@ type_done:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
+; EXPECT ( addr u -- )
+; Reads up to u characters from the terminal and stores them starting at addr.
+; Stops when a Carriage Return is typed or when u characters are read.
+; Stores the number of characters read in user variable SPAN.
+; -----------------------------------------------------------------------------
+EXPECT_NFA:
+    ; Name Field: Length 6, bit 7 set in first ('E') and last ('T') characters ($86)
+    ; 'E' = $45 -> $C5, 'X' = $58, 'P' = $50, 'E' = $45, 'C' = $43, 'T' = $54 -> $D4
+    db $86, $C5, 'X', 'P', 'E', 'C', $D4
+
+    ; Link Field: Points to TYPE_NFA
+    dw TYPE_NFA
+
+EXPECT_CFA:
+    dw EXPECT_code
+
+EXPECT_code:
+    ; 1. Check if count u (DE) is greater than 0
+    ld a, d
+    and $80
+    jr nz, expect_zero    ; If negative, behave as zero count (exit)
+    
+    ld a, d
+    or e
+    jr z, expect_zero     ; If zero, behave as zero count (exit)
+
+    ; 2. Load address addr from stack into HL
+    ld a, (ix+0)
+    ld l, a
+    ld a, (ix+1)
+    ld h, a
+
+    ; 3. Initialize character counter IY to 0
+    ld iy, 0
+
+expect_char_loop:
+    ; 4. Read character from port 1
+    in a, (TTY_DATA_PORT)
+
+    ; 5. Check character read
+    ; If Carriage Return ($0D) or Line Feed ($0A), finish
+    cp $0d
+    jr z, expect_done_cr
+    cp $0a
+    jr z, expect_done_cr
+
+    ; If Backspace ($08) or Delete ($7F)
+    cp $08
+    jr z, expect_backspace
+    cp $7f
+    jr z, expect_backspace
+
+    ; Normal character: Check if we have room to store it
+    push hl
+    push iy
+    pop hl              ; HL = current count (IY)
+    or a
+    sbc hl, de          ; Compare count with limit (DE)
+    pop hl
+    jr z, expect_char_loop ; If we reached the limit, ignore any new characters except CR/Backspace
+
+    ; Store character at HL
+    ld (hl), a
+    inc hl
+    inc iy
+
+    ; Echo character
+    call EMIT_char
+    jr expect_char_loop
+
+expect_backspace:
+    ; Check if we have read any characters (IY > 0)
+    push hl
+    push iy
+    pop hl
+    ld a, h
+    or l
+    pop hl
+    jr z, expect_char_loop ; If count is 0, do nothing
+
+    ; Decrement pointers
+    dec hl
+    dec iy
+
+    ; Visual erase on terminal: Backspace ($08), Space ($20), Backspace ($08)
+    ld a, $08
+    call EMIT_char
+    ld a, ' '
+    call EMIT_char
+    ld a, $08
+    call EMIT_char
+    jr expect_char_loop
+
+expect_done_cr:
+    ; Echo Carriage Return and Line Feed
+    ld a, $0d
+    call EMIT_char
+    ld a, $0a
+    call EMIT_char
+
+    ; Store count in user variable SPAN
+    ld (USER_AREA_START + U_SPAN), iy
+    jr expect_done
+
+expect_zero:
+    ; If count u was 0, SPAN is set to 0
+    ld iy, 0
+    ld (USER_AREA_START + U_SPAN), iy
+
+expect_done:
+    ; Pop next value from stack (below addr) into TOS (DE)
+    ld e, (ix+2)
+    ld d, (ix+3)
+    
+    ; Clean up stack: increment IX by 4
+    inc ix
+    inc ix
+    inc ix
+    inc ix
+    
+    jp NEXT
+
+; -----------------------------------------------------------------------------
 ; WORD ( char -- addr )
 ; -----------------------------------------------------------------------------
 ; Parses the next token from the terminal input buffer (TIB) delimited by char.
@@ -238,7 +361,7 @@ WORD_NFA:
 
     ; Link Field: Points to BYE_NFA
 WORD_LFA:
-    dw TYPE_NFA
+    dw EXPECT_NFA
 
     ; Code Field: Points to the code execution entry
 WORD_CFA:
