@@ -38,7 +38,6 @@ LIT_code:
 
     jp NEXT
 
-
 ; -----------------------------------------------------------------------------
 ; STATE ( -- addr )
 ; -----------------------------------------------------------------------------
@@ -69,6 +68,7 @@ STATE_code:
 
     jp NEXT
 
+; -----------------------------------------------------------------------------
 ; INTERPRET ( -- )
 ; -----------------------------------------------------------------------------
 ; The main loop of the Forth interpreter. Parses tokens from the input stream
@@ -730,7 +730,6 @@ LBRACKET_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
-
 ; ] ( -- )
 ; Sets compilation state (STATE = 1).
 ; -----------------------------------------------------------------------------
@@ -751,7 +750,6 @@ RBRACKET_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
-
 ; CREATE ( -- )
 ; Parses the next word name from the input stream and creates a new dictionary
 ; entry for it. When the created word is later executed, it will push the
@@ -852,7 +850,6 @@ CREATE_execution:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
-
 ; , (comma) ( x -- )
 ; Allocates two bytes in the dictionary and stores x there, advancing U_DP.
 ; -----------------------------------------------------------------------------
@@ -890,7 +887,6 @@ COMMA_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
-
 ; IMMEDIATE ( -- )
 ; Marks the most recently defined word as immediate (executed during compile time).
 ; -----------------------------------------------------------------------------
@@ -919,7 +915,6 @@ IMMEDIATE_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
-
 ; : (colon) ( -- )
 ; Starts compilation of a new colon definition.
 ; -----------------------------------------------------------------------------
@@ -963,7 +958,6 @@ COLON_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
-
 ; ; (semicolon) ( -- )
 ; Ends compilation of a colon definition. Compiles SEMI_CFA and exits compiling mode.
 ; This is an IMMEDIATE word.
@@ -1001,7 +995,6 @@ SEMI_CFA:
     dw SEMI
 
 ; -----------------------------------------------------------------------------
-
 ; HERE ( -- addr )
 ; Leaves the address of the next free location in the dictionary on the stack.
 ; -----------------------------------------------------------------------------
@@ -1070,7 +1063,6 @@ PAD_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
-
 ; ALLOT ( n -- )
 ; Allocates n bytes in the dictionary by advancing DP by n.
 ; -----------------------------------------------------------------------------
@@ -1106,7 +1098,6 @@ ALLOT_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
-
 ; C, ( char -- )
 ; Allocates one byte in the dictionary and stores char there, advancing DP by 1.
 ; -----------------------------------------------------------------------------
@@ -1141,7 +1132,6 @@ C_COMMA_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
-
 ; CONSTANT ( x -- )
 ; Creates a constant with the given name, storing x.
 ; -----------------------------------------------------------------------------
@@ -1220,7 +1210,6 @@ DOCON:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
-
 ; VARIABLE ( -- )
 ; Creates a variable with the given name, allocating 2 bytes initialized to 0.
 ; -----------------------------------------------------------------------------
@@ -1317,7 +1306,6 @@ bracket_compile_err:
     jp INTERPRET_error          ; Print error message and abort
 
 ; -----------------------------------------------------------------------------
-
 ; COMPILE ( -- )
 ; Compiles the next CFA in the instruction stream into the current definition.
 ; -----------------------------------------------------------------------------
@@ -1357,7 +1345,6 @@ COMPILE_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
-
 ; LITERAL ( x -- )
 ; Compiles x into the current definition as a literal value.
 ; This is an IMMEDIATE word.
@@ -1539,7 +1526,6 @@ IF_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
-
 ; ELSE ( orig1 -- orig2 )
 ; Compiles BRANCH, resolves orig1 to current HERE, and leaves new target on stack.
 ; This is an IMMEDIATE word.
@@ -1605,7 +1591,6 @@ ELSE_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
-
 ; THEN ( orig -- )
 ; Resolves the branch target at orig to the current HERE.
 ; This is an IMMEDIATE word.
@@ -1642,7 +1627,6 @@ THEN_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
-
 ; BEGIN ( -- dest )
 ; Leaves the current dictionary pointer (HERE) on the stack as a loop destination.
 ; This is an IMMEDIATE word.
@@ -1675,7 +1659,6 @@ BEGIN_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
-
 ; UNTIL ( dest -- )
 ; Compiles a ZERO_BRANCH followed by the absolute destination address.
 ; This is an IMMEDIATE word.
@@ -1723,7 +1706,6 @@ UNTIL_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
-
 ; WHILE ( dest -- dest orig )
 ; Compiles a ZERO_BRANCH with a dummy target cell, leaving the target address cell
 ; on the stack above the BEGIN destination.
@@ -1774,7 +1756,6 @@ WHILE_code:
     jp NEXT
 
 ; -----------------------------------------------------------------------------
-
 ; REPEAT ( dest orig -- )
 ; Compiles an unconditional BRANCH back to dest, resolves orig to the current HERE,
 ; and cleans the stack.
@@ -2051,6 +2032,7 @@ LOOP_compiler_code:
     inc ix
     
     jp NEXT
+
 
 ; -----------------------------------------------------------------------------
 ; (+LOOP) ( -- )
