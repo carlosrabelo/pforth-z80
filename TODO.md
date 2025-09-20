@@ -126,7 +126,7 @@ Forth demonstration applications.
 
 ## Demos
 
-- [ ] Sieve of Eratosthenes benchmark
+- [x] Sieve of Eratosthenes benchmark
 - [ ] Block-based line editor
 - [ ] Mini text adventure game
 - [ ] WORDS and DUMP system tools
